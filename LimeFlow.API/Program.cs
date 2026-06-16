@@ -17,10 +17,5 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var users = new List<User>
-{
-    new User("Henrique Machado", "heyhenriquecastro@gmail.com", "Admin"),
-    new User("John Dooe", "johndoe@company.com", "Manager"),
-};
 
 app.MapGet("/", () =>  "Hello World");

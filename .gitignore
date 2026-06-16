@@ -399,4 +399,7 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
+docker-compose.yml
+Dockerfile
+
 # End of https://www.toptal.com/developers/gitignore/api/csharp
