@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LimeFlow.Domain.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,5 +9,11 @@ namespace LimeFlow.Domain.Interfaces
 {
     internal interface IUserRepository
     {
+        Task CreateUserAsync(User user);
+        Task UpdateUserAsync(int id);
+        Task DeletesUserAsync(int id);
+        Task<User> GetUserByIdAsync(Guid id);
+        Task<IReadOnlyList<User>> GetAllUsersAsync();
+
     }
 }
