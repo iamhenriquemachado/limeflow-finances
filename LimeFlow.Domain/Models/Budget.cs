@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LimeFlow.Domain.Models
 {
-    internal class Budget
+    public class Budget
     {
         public int Id { get; set; }
         public int Category { get; set; }

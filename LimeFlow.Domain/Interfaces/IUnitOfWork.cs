@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace LimeFlow.Domain.Interfaces
 {
-    internal interface IUnitOfWork
+    public interface IUnitOfWork
     {
+        Task<bool> CommitAsync();
     }
 }

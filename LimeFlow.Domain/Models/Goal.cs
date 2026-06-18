@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LimeFlow.Domain.Models
 {
-    internal class Goal
+    public class Goal
     {
         public int Id { get; set; }
         public string Name { get; set; }

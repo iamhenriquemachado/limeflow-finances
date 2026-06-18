@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace LimeFlow.Domain.Models
 {
-    internal class Transaction
+    public class Transaction
     {
         public Guid Id { get; set; }
         public DateTime TransactionDate { get; set; }

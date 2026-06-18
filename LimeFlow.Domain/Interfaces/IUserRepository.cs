@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace LimeFlow.Domain.Interfaces
 {
-    internal interface IUserRepository
+    public interface IUserRepository
     {
         Task CreateUserAsync(User user);
         Task UpdateUserAsync(int id);
