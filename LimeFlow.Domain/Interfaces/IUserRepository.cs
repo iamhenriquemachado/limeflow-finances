@@ -9,11 +9,11 @@ namespace LimeFlow.Domain.Interfaces
 {
     public interface IUserRepository
     {
-        Task CreateUserAsync(User user);
-        Task UpdateUserAsync(int id);
-        Task DeletesUserAsync(int id);
-        Task<User> GetUserByIdAsync(Guid id);
-        Task<IReadOnlyList<User>> GetAllUsersAsync();
+        Task CreateAsync(User user);
+        Task UpdateUserAsync(User user);
+        Task DeleteAsync(Guid id);
+        Task<User> GetByIdAsync(Guid id);
+        Task<IReadOnlyList<User>> GetAllAsync();
 
     }
 }

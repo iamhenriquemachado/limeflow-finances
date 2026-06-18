@@ -10,10 +10,10 @@ namespace LimeFlow.Domain.Interfaces
     public interface ICategoryRepository
     {
 
-        Task CreateCategoryAsync(Category category);
-        Task UpdateCategoryAsync(int id);
-        Task DeleteCategoryAsync(int id);
-        Task<Category> GetCategoryAsync(int id);
-        Task<IReadOnlyList<Category>> GetAllCategoryAsync();
+        Task CreateAsync(Category category);
+        Task UpdateAsync(Category category);
+        Task DeleteAsync(Guid id);
+        Task<Category> GetByIdAsync(Guid id);
+        Task<IReadOnlyList<Category>> GetAllAsync();
     }
 }

@@ -8,7 +8,7 @@ namespace LimeFlow.Domain.Models
 {
     public class Budget
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public int Category { get; set; }
         public int AlertTreshold { get; set; }
         public int Period { get; set; }

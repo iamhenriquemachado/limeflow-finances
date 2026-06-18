@@ -9,10 +9,10 @@ namespace LimeFlow.Domain.Interfaces
 {
     public interface ITransactionRepository
     {
-        Task CreateTransactionAsync(Transaction transaction);
-        Task UpdateTransactionAsync(Guid id);
-        Task DeleteTransactionAsync(int id);
-        Task<Transaction> GetTransactionByIdAsync(int id);
-        Task<IReadOnlyList<Transaction>> GetAllTransactionAsync();
+        Task CreateAsync(Transaction transaction);
+        Task UpdateAsync(Transaction transaction);
+        Task DeleteAsync(Guid id);
+        Task<Transaction> GetByIdAsync(Guid id);
+        Task<IReadOnlyList<Transaction>> GetAllAsync();
     }
 }

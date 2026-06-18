@@ -9,10 +9,10 @@ namespace LimeFlow.Domain.Interfaces
 {
     public interface IAccountRepository
     {
-        Task CreateAccountAsync(Account account);
-        Task UpdateAccountAsync(int id);
-        Task DeleteAccountAsync(int id);
-        Task<Account> GetAccountAsync(Guid id);
-        Task<IReadOnlyList<Account>> GetAllAccountAsync();
+        Task CreateAsync(Account account);
+        Task UpdateAsync(Account account);
+        Task DeleteAsync(Guid id);
+        Task<Account> GetByIdAsync(Guid id);
+        Task<IReadOnlyList<Account>> GetAllAsync();
     }
 }
