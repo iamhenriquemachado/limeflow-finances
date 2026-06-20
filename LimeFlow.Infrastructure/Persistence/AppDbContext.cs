@@ -17,5 +17,9 @@ namespace LimeFlow.Infrastructure.Database
         public DbSet<Category> Categories { get; set; }
         public DbSet<Goal> Goals { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
+        protected override void OnModelCreating(ModelBuilder modeBuilder)
+        {
+
+        }
     }
 }
