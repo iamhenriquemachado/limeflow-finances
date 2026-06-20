@@ -1,0 +1,67 @@
+Table users {
+  id varchar [primary key]
+  name varchar
+  email varchar
+  password varchar
+  created_at timestamp
+  last_updated_at timestamp
+}
+
+Table accounts {
+  id varchar [primary key]
+  name varchar [not null]
+  bank varchar [not null]
+  balance decimal [not null]
+  created_at timestamp [not null]
+  updated_at timestamp [not null]
+  user_id varchar [not null]
+}
+
+Table categories {
+  id varchar [primary key]
+  user_id varchar [not null]
+  description varchar [not null]
+  created_at datetime [not null]
+}
+
+Table budgets {
+  id varchar [primary key]
+  category_id varchar [not null]
+  limit_amount decimal [not null]
+  alert_treshold integer [not null]
+  period integer [not null]
+  notes varchar [not null]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+}
+
+Table goals {
+  id varchar [primary key]
+  user_id varchar [not null]
+  name varchar [not null]
+  description varchar [not null]
+  target decimal [not null]
+  already_saved decimal [not null]
+  target_date datetime [not null]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  monthly_contribution decimal [not null]
+  icon varchar [not null]
+}
+
+Table transactions {
+  id varchar [primary key]
+  created_at datetime [not null]
+  description varchar [not null]
+  account_id varchar [not null]
+  category_id varchar [not null]
+  transaction_type int [not null]
+  amount decimal [not null]
+}
+
+Ref: accounts.user_id > users.id
+Ref: categories.user_id > users.id
+Ref: goals.user_id > users.id
+Ref: budgets.category_id > categories.id
+Ref: transactions.account_id > accounts.id
+Ref: transactions.category_id > categories.id
