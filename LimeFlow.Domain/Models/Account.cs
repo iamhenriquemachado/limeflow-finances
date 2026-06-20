@@ -12,6 +12,8 @@ namespace LimeFlow.Domain.Models
         public string Name { get; private set; }
         public string Bank { get; private set; }
         public decimal Balance { get; private set; }
+        public DateTime CreatedAt { get; private set; }
+        public DateTime UpdatedAt { get; private set; }
         public string UserId { get; private set; }
 
         public Account(string name, string bank, string userId)
@@ -20,6 +22,7 @@ namespace LimeFlow.Domain.Models
             this.Name = string.IsNullOrWhiteSpace(name) ? throw new ArgumentNullException("Name cannot be null") : name;
             this.Bank = bank;
             this.Balance = 0;
+            this.CreatedAt = DateTime.Now;
             this.UserId = userId;
         }
 
