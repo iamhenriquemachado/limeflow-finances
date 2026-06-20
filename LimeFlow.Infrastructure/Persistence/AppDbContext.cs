@@ -1,7 +1,7 @@
-﻿using System;
+﻿using LimeFlow.Domain.Models;
 using Microsoft.EntityFrameworkCore;
-using LimeFlow.Domain;
-using LimeFlow.Domain.Models;
+using System.Reflection;
+using System.Reflection.Emit;
 
 namespace LimeFlow.Infrastructure.Database
 {
@@ -19,7 +19,7 @@ namespace LimeFlow.Infrastructure.Database
         public DbSet<Transaction> Transactions { get; set; }
         protected override void OnModelCreating(ModelBuilder modeBuilder)
         {
-
+            modeBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         }
     }
 }
