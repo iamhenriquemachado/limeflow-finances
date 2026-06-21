@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace LimeFlow.Application.Users.Commands
 {
-    public sealed record CreateUserCommand () : IRequestHandler<Create>
+    public sealed record CreateUserCommand () 
     {
         public Guid Id { get; set; }
         public string Name { get; set; }
