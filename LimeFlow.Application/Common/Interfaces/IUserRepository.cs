@@ -10,7 +10,7 @@ namespace LimeFlow.Application.Common.Interfaces
     public interface IUserRepository
     {
         Task CreateAsync(User user);
-        Task UpdateUserAsync(User user);
+        Task UpdateUserAsync(Guid id, User user);
         Task DeleteAsync(Guid id);
         Task<User> GetByIdAsync(Guid id);
         Task<IReadOnlyList<User>> GetAllAsync();
