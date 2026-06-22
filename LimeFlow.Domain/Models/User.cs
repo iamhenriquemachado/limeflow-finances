@@ -14,14 +14,5 @@ namespace LimeFlow.Domain.Models
         public DateTime CreatedAt { get; set; }
         public DateTime LastUpdatedAt { get; set; }
 
-        public User(Guid id, string name, string email, string password, DateTime createdAt, DateTime lastUpdatedAt)
-        {
-            Id = id;
-            Name = name;
-            Email = email;
-            Password = password;
-            CreatedAt = createdAt;
-            LastUpdatedAt = lastUpdatedAt;
-        }
     }
 }

@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace LimeFlow.Application.DTOs
 {
-    public sealed record UserUpdateDto
+
+    public sealed record CreateUserRequest
     {
-        public Guid Id { get; set; }
         public string Name { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }

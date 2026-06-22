@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using LimeFlow.Application;
-using LimeFlow.Application.Common.Interfaces;
+﻿using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Domain.Models;
 using LimeFlow.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
 namespace LimeFlow.Infrastructure.Repositories
 {
-    internal class UserRepository : IUserRepository
+    public class UserRepository : IUserRepository
     {
         private readonly AppDbContext _context;
 
