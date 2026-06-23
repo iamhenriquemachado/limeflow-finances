@@ -15,10 +15,25 @@ namespace LimeFlow.API.Controllers
             group.MapGet("/users", async (IUserRepository repo) =>
             {
                 var users = await repo.GetAllAsync();
-                return Results.Ok(users);
-            }).WithName("GetUsers").WithSummary("Get all users")
+
+
+                var userResponseDto = users.Select(user => new UserResponseDto(
+                    user.Id,
+                    user.Email,
+                    user.Name,
+                    user.CreatedAt,
+                    user.LastUpdatedAt
+                 ));
+
+                return Results.Ok(userResponseDto);
+
+
+
+            }).WithName("GetUsers")
+            .WithSummary("Get all users")
             .WithDescription("Returns a list of users.")
-            .WithTags("Users");
+            .WithTags("Users")
+            .Produces<UserResponseDto>(StatusCodes.Status200OK);
 
 
             group.MapPost("/users", async (CreateUserRequest request, IUserRepository repo) =>
@@ -55,9 +70,9 @@ namespace LimeFlow.API.Controllers
                 var userResponseDto = new UserResponseDto
                 (
                     newUserEntity.Id,
-                    newUserEntity.Email, 
-                    newUserEntity.Name, 
-                    newUserEntity.CreatedAt, 
+                    newUserEntity.Email,
+                    newUserEntity.Name,
+                    newUserEntity.CreatedAt,
                     newUserEntity.LastUpdatedAt
                 );
 
