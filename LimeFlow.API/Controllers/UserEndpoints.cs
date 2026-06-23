@@ -23,11 +23,9 @@ namespace LimeFlow.API.Controllers
                     user.Name,
                     user.CreatedAt,
                     user.LastUpdatedAt
-                 ));
+                 )).ToList();
 
                 return Results.Ok(userResponseDto);
-
-
 
             }).WithName("GetUsers")
             .WithSummary("Get all users")
