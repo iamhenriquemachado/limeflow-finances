@@ -21,36 +21,56 @@ namespace LimeFlow.API.Controllers
             .WithTags("Users");
 
 
-            group.MapPost("/users", async (CreateUserRequest user, IUserRepository repo) =>
+            group.MapPost("/users", async (CreateUserRequest request, IUserRepository repo) =>
             {
                 int workFactor = 12;
 
 
                 var errors = new Dictionary<string, string[]>();
 
-                if (string.IsNullOrWhiteSpace(user.Name))
+                if (string.IsNullOrWhiteSpace(request.Name))
                     errors["name"] = ["Name is required."];
+                if (request.Name?.Length > 100)
+                    errors["name"] = ["Cannot exceed 100 characters for the name"];
+                if (string.IsNullOrWhiteSpace(request.Password))
+                    errors["password"] = ["Password cannot be null or empty"];
 
-                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(user.Password, workFactor);
+                if (errors.Count > 0)
+                {
+                    return Results.ValidationProblem(errors);
+                }
+
+                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor);
 
                 var newUserEntity = new User
                 {
                     Id = Guid.NewGuid(),
-                    Email = user.Email,
-                    Name = user.Name,
+                    Email = request.Email,
+                    Name = request.Name,
                     Password = hashedPassword,
-                    CreatedAt = DateTime.Now,
-                    LastUpdatedAt = DateTime.Now
+                    CreatedAt = DateTime.UtcNow,
+                    LastUpdatedAt = DateTime.UtcNow
                 };
+
+                var userResponseDto = new UserResponseDto
+                (
+                    newUserEntity.Id,
+                    newUserEntity.Email, 
+                    newUserEntity.Name, 
+                    newUserEntity.CreatedAt, 
+                    newUserEntity.LastUpdatedAt
+                );
 
                 await repo.CreateAsync(newUserEntity);
 
-                return Results.Created($"/api/v1/users/{newUserEntity.Id}", newUserEntity);
+                return Results.Created($"/api/v1/users/{newUserEntity.Id}", userResponseDto);
 
             }).WithName("CreateUser")
             .WithSummary("Create a new user")
             .WithDescription("Creates a new user and returns it with a 201 Created status and Location Header.")
-            .WithTags("Users");
+            .WithTags("Users")
+            .Produces<UserResponseDto>(StatusCodes.Status201Created)
+            .Produces<HttpValidationProblemDetails>(StatusCodes.Status400BadRequest);
         }
     }
 }
