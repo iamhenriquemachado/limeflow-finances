@@ -18,6 +18,8 @@ namespace LimeFlow.Infrastructure.Persistence.Configurations
             builder.Property(u => u.Name).HasMaxLength(100).IsRequired();
             builder.Property(u => u.Email).IsRequired();
             builder.Property(u => u.Password).HasMaxLength(100).IsRequired();
+            builder.Property(u => u.CreatedAt).IsRequired();
+            builder.Property(u => u.LastUpdatedAt).IsRequired();
         }   
     }
 }
