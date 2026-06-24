@@ -1,8 +1,8 @@
 ﻿using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Application.Common.Utils;
-using LimeFlow.Application.DTOs;
 using LimeFlow.Domain.Models;
 using BCrypt.Net;
+using LimeFlow.Application.Common.DTOs;
 
 
 namespace LimeFlow.API.Controllers
