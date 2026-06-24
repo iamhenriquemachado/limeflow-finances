@@ -1,9 +1,10 @@
+using LimeFlow.API.Controllers;
+using LimeFlow.API.Middlewares;
+using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Infrastructure.Database;
+using LimeFlow.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
-using LimeFlow.Application.Common.Interfaces;
-using LimeFlow.Infrastructure.Repositories;
-using LimeFlow.API.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 
 var app = builder.Build();
+app.UseMiddleware<ValidationExceptionMiddleware>();
 
 app.UseExceptionHandler();
 

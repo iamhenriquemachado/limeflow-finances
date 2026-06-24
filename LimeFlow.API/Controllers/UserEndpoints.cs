@@ -1,7 +1,4 @@
 ﻿using LimeFlow.Application.Common.Interfaces;
-using LimeFlow.Application.Common.Utils;
-using LimeFlow.Domain.Models;
-using BCrypt.Net;
 using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Mediator.Users.Commands.CreateUser;
 using MediatR;
@@ -62,13 +59,6 @@ namespace LimeFlow.API.Controllers
 
             group.MapPost("/users", async (CreateUserCommand request, IMediator mediator) =>
             {
-
-                var errors = CreateUserCommandHandler.ValidateErrors(request);
-
-                if (errors.Count > 0)
-                {
-                    return Results.ValidationProblem(errors);
-                }
 
                 var response = await mediator.Send(request);
                 return Results.Created($"/api/v1/users/{response.Id}", response);
