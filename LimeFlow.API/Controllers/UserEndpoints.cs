@@ -14,18 +14,7 @@ namespace LimeFlow.API.Controllers
 
             group.MapGet("/users", async (IUserRepository repo) =>
             {
-                var users = await repo.GetAllAsync();
 
-
-                var userResponseDto = users.Select(user => new UserResponseDto(
-                    user.Id,
-                    user.Email,
-                    user.Name,
-                    user.CreatedAt,
-                    user.LastUpdatedAt
-                 )).ToList();
-
-                return Results.Ok(userResponseDto);
 
             }).WithName("GetUsers")
             .WithSummary("Get All Users")

@@ -6,7 +6,6 @@
 
   <ItemGroup>
     <Folder Include="Common\Exceptions\" />
-    <Folder Include="Mediator\Users\Queries\" />
   </ItemGroup>
 
   <ItemGroup>
