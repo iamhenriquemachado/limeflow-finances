@@ -2,6 +2,7 @@
 using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Mediator.Users.Commands.CreateUser;
 using MediatR;
+using LimeFlow.Application.Mediator.Users.Queries;
 
 
 namespace LimeFlow.API.Controllers
@@ -12,15 +13,18 @@ namespace LimeFlow.API.Controllers
         {
             var group = app.MapGroup("/api/v1");
 
-            group.MapGet("/users", async (IUserRepository repo) =>
+            group.MapGet("/users", async (IMediator mediator) =>
             {
-
+                var response = await mediator.Send(new GetUsersQuery());
+                return Results.Ok(response.Select(u => new UserResponseDto(u.Id, u.Name, u.Email, u.CreatedAt)));
 
             }).WithName("GetUsers")
-            .WithSummary("Get All Users")
-            .WithDescription("Returns a list of users.")
+            .WithSummary("List all registered users")
+            .WithDescription("Retrieves a paginated list of all users available in the system. Requires administrative privileges.")
             .WithTags("Users")
-            .Produces<UserResponseDto>(StatusCodes.Status200OK);
+            .Produces<List<UserResponseDto>>(StatusCodes.Status200OK, "application/json")
+            .Produces(StatusCodes.Status401Unauthorized, typeof(void), "application/json")
+            .Produces<HttpValidationProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json");
 
 
             group.MapGet("/user/{id:guid}", async (IUserRepository repo, Guid id) =>

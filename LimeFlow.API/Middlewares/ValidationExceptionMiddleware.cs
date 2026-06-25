@@ -26,15 +26,15 @@ namespace LimeFlow.API.Middlewares
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 context.Response.ContentType = "application/problem+json";
 
-                var errors = ex.Errors.GroupBy(e => e.PropertyName).ToDictionary(g => g.Key, g.Select(e => e.ErrorMessage).ToArray());
+                var errors = ex.Errors.GroupBy(e => e.PropertyName).ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
 
                 var problemDetails = new HttpValidationProblemDetails(errors)
                 {
                     Status = StatusCodes.Status400BadRequest,
-                    Title = "Validation Failed", 
+                    Title = "Validation Failed",
                     Detail = "One or more validation errors ocurred."
                 };
-                
+
             }
         }
 

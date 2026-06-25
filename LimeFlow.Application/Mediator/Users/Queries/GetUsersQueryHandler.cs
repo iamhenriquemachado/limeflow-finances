@@ -19,7 +19,10 @@ namespace LimeFlow.Application.Mediator.Users.Queries
             var users = await _repo.GetAllAsync();
 
             var userResponseDto = users.Select(u => new UserResponseDto(
-                u.Id, u.Name, u.Email, u.CreatedAt
+                u.Id, 
+                u.Name, 
+                u.Email, 
+                u.CreatedAt
             )).ToList();
 
             return userResponseDto;
