@@ -1,7 +1,8 @@
 ﻿using FluentValidation;
 using LimeFlow.Application.Common.Utils;
+using LimeFlow.Application.Mediator.Users.Commands;
 
-namespace LimeFlow.Application.Mediator.Users.Commands.CreateUser
+namespace LimeFlow.Application.Mediator.Users.Validators
 {
     public class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
     {

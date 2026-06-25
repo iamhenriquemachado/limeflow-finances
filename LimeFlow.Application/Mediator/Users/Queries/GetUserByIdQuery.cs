@@ -6,7 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LimeFlow.Application.Mediator.Users.Commands.CreateUser
+namespace LimeFlow.Application.Mediator.Users.Queries
 {
-    public record CreateUserCommand(string Name, string Email, string Password) : IRequest<UserResponseDto>;
+
+    public record GetUserByIdQuery(Guid Id) : IRequest<UserResponseDto>;
 }

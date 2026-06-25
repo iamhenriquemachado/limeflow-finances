@@ -2,10 +2,11 @@
 using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Application.Common.Utils;
+using LimeFlow.Application.Mediator.Users.Commands;
 using LimeFlow.Domain.Models;
 using MediatR;
 
-namespace LimeFlow.Application.Mediator.Users.Commands.CreateUser
+namespace LimeFlow.Application.Mediator.Users.Handlers
 {
     public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserResponseDto>
     {

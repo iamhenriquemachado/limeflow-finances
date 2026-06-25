@@ -1,9 +1,10 @@
 ﻿using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
+using LimeFlow.Application.Mediator.Users.Queries;
 using MediatR;
 
 
-namespace LimeFlow.Application.Mediator.Users.Queries
+namespace LimeFlow.Application.Mediator.Users.Handlers
 {
     public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, IReadOnlyList<UserResponseDto>>
     {

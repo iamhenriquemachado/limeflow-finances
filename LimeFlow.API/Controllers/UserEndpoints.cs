@@ -1,8 +1,8 @@
 ﻿using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Application.Common.DTOs;
-using LimeFlow.Application.Mediator.Users.Commands.CreateUser;
 using MediatR;
 using LimeFlow.Application.Mediator.Users.Queries;
+using LimeFlow.Application.Mediator.Users.Commands;
 
 
 namespace LimeFlow.API.Controllers
@@ -27,20 +27,10 @@ namespace LimeFlow.API.Controllers
             .Produces<HttpValidationProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json");
 
 
-            group.MapGet("/user/{id:guid}", async (IUserRepository repo, Guid id) =>
+            group.MapGet("/user/{id:guid}", async (Guid id, IMediator mediator) =>
             {
-                var errors = new Dictionary<string, string[]>();
-
-                var user = await repo.GetByIdAsync(id);
-
-                if (user is null)
-                    errors["id"] = ["The specified user could not be found."];
-
-                if (errors.Count > 0)
-                {
-                    return Results.ValidationProblem(errors);
-                }
-                return Results.Ok(user);
+                var response = await mediator.Send(new GetUserByIdQuery(id));
+                return Results.Ok(response);
 
             }).WithName("GetUserById")
               .WithSummary("Get User By Id")
