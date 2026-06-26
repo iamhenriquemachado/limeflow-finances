@@ -35,6 +35,8 @@ namespace LimeFlow.API.Middlewares
                     Detail = "One or more validation errors ocurred."
                 };
 
+                await context.Response.WriteAsJsonAsync(problemDetails);
+
             }
         }
 

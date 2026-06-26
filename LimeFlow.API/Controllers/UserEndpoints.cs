@@ -27,7 +27,7 @@ namespace LimeFlow.API.Controllers
             .Produces<HttpValidationProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json");
 
 
-            group.MapGet("/user/{id:guid}", async (Guid id, IMediator mediator) =>
+            group.MapGet("/users/{id:guid}", async (Guid id, IMediator mediator) =>
             {
                 var response = await mediator.Send(new GetUserByIdQuery(id));
                 return Results.Ok(response);
