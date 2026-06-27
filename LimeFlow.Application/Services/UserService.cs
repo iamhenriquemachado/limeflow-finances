@@ -24,5 +24,13 @@ namespace LimeFlow.Application.Services
 
             return (IReadOnlyList<UserResponseDto>)userResponseDto;
         }
+
+        public async Task<UserResponseDto> GetUserByIdService(Guid id)
+        {
+            var user = await _repo.GetByIdAsync(id);
+            var userResponseDto = new UserResponseDto(user.Id, user.Name, user.Email, user.CreatedAt);
+
+            return userResponseDto;
+        }
     }
 }

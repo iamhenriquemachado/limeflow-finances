@@ -25,9 +25,10 @@ namespace LimeFlow.API.Controllers
             .Produces<HttpValidationProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json");
 
 
-            group.MapGet("/users/{id:guid}", async (Guid id) =>
+            group.MapGet("/users/{id:guid}", async (Guid id, UserService service) =>
             {
-                
+                var user = await service.GetUserByIdService(id);
+                return Results.Ok(user);
 
             }).WithName("GetUserById")
               .WithSummary("Get User By Id")
