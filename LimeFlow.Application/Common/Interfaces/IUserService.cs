@@ -12,6 +12,7 @@ namespace LimeFlow.Application.Common.Interfaces
         Task<IReadOnlyList<UserResponseDto>> GetUsersService();
         Task<UserResponseDto> GetUserByIdService(Guid id);
         Task<UserResponseDto> CreateUserService(CreateUserRequestDto request);
+        Task DeleteUserService(Guid id);
 
 
     }

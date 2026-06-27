@@ -21,9 +21,9 @@ namespace LimeFlow.Application.Services
         public async Task<IReadOnlyList<UserResponseDto>> GetUsersService()
         {
             var users = await _repo.GetAllAsync();
-            var userResponseDto = users.Select(u => new UserResponseDto(u.Id, u.Name, u.Email, u.CreatedAt));
+            var userResponseDto = users.Select(u => new UserResponseDto(u.Id, u.Name, u.Email, u.CreatedAt)).ToList();
 
-            return (IReadOnlyList<UserResponseDto>)userResponseDto;
+            return userResponseDto;
         }
 
         public async Task<UserResponseDto> GetUserByIdService(Guid id)
@@ -41,6 +41,7 @@ namespace LimeFlow.Application.Services
                 Id = Guid.NewGuid(),
                 Name = request.name,
                 Email = request.email,
+                Password = request.password,
                 CreatedAt = DateTime.UtcNow,
                 LastUpdatedAt = DateTime.UtcNow
 
@@ -51,6 +52,12 @@ namespace LimeFlow.Application.Services
             var userResponseDto = new UserResponseDto(user.Id, user.Name, user.Email, user.CreatedAt);
 
             return userResponseDto;
+
+        }
+
+        public async Task DeleteUserService(Guid id)
+        {
+            await _repo.DeleteAsync(id);
 
         }
     }
