@@ -1,22 +1,20 @@
-﻿using LimeFlow.Application.Common.Interfaces;
-using LimeFlow.Application.Common.DTOs;
-using MediatR;
-using LimeFlow.Application.Mediator.Users.Queries;
-using LimeFlow.Application.Mediator.Users.Commands;
+﻿using LimeFlow.Application.Common.DTOs;
+using LimeFlow.Application.Services;
 
 
 namespace LimeFlow.API.Controllers
 {
     public static class UserEndpoints
     {
+
         public static void MapUserEndpoints(this IEndpointRouteBuilder app)
         {
             var group = app.MapGroup("/api/v1");
 
-            group.MapGet("/users", async (IMediator mediator) =>
+            group.MapGet("/users", async (UserService service) =>
             {
-                var response = await mediator.Send(new GetUsersQuery());
-                return Results.Ok(response.Select(u => new UserResponseDto(u.Id, u.Name, u.Email, u.CreatedAt)));
+                var users = await service.GetUsersService();
+                return Results.Ok(users);
 
             }).WithName("GetUsers")
             .WithSummary("List all registered users")
@@ -27,10 +25,9 @@ namespace LimeFlow.API.Controllers
             .Produces<HttpValidationProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json");
 
 
-            group.MapGet("/users/{id:guid}", async (Guid id, IMediator mediator) =>
+            group.MapGet("/users/{id:guid}", async (Guid id) =>
             {
-                var response = await mediator.Send(new GetUserByIdQuery(id));
-                return Results.Ok(response);
+                
 
             }).WithName("GetUserById")
               .WithSummary("Get User By Id")
@@ -40,11 +37,10 @@ namespace LimeFlow.API.Controllers
               .Produces<UserResponseDto>(StatusCodes.Status404NotFound);
 
 
-            group.MapPost("/users", async (CreateUserCommand request, IMediator mediator) =>
+            group.MapPost("/users", async (CreateUserRequestDto request, UserService service) =>
             {
-
-                var response = await mediator.Send(request);
-                return Results.Created($"/api/v1/users/{response.Id}", response);
+                
+                
 
             }).WithName("CreateUser")
             .WithSummary("Create a New User")
@@ -52,6 +48,14 @@ namespace LimeFlow.API.Controllers
             .WithTags("Users")
             .Produces<UserResponseDto>(StatusCodes.Status201Created)
             .Produces<HttpValidationProblemDetails>(StatusCodes.Status400BadRequest);
+
+            group.MapDelete("/users", async (Guid id) =>
+            {
+                //
+
+            });
         }
+
+        
     }
 }
