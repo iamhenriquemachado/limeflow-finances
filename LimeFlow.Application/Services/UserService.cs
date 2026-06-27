@@ -1,5 +1,6 @@
 ﻿using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
+using LimeFlow.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace LimeFlow.Application.Services
 {
-    public class UserService
+    public class UserService : IUserService
     {
         private readonly IUserRepository _repo;
 
@@ -31,6 +32,26 @@ namespace LimeFlow.Application.Services
             var userResponseDto = new UserResponseDto(user.Id, user.Name, user.Email, user.CreatedAt);
 
             return userResponseDto;
+        }
+
+        public async Task<UserResponseDto> CreateUserService(CreateUserRequestDto request)
+        {
+            User user = new User()
+            {
+                Id = Guid.NewGuid(),
+                Name = request.name,
+                Email = request.email,
+                CreatedAt = DateTime.UtcNow,
+                LastUpdatedAt = DateTime.UtcNow
+
+            };
+
+            await _repo.CreateAsync(user);
+
+            var userResponseDto = new UserResponseDto(user.Id, user.Name, user.Email, user.CreatedAt);
+
+            return userResponseDto;
+
         }
     }
 }
