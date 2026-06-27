@@ -1,6 +1,8 @@
-﻿using LimeFlow.Application.Common.Interfaces;
+﻿using LimeFlow.Application.Common.DTOs;
+using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Domain.Models;
 using LimeFlow.Infrastructure.Database;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,34 +14,37 @@ namespace LimeFlow.Infrastructure.Repositories
     public class AccountRepository : IAccountRepository
     {
         private readonly AppDbContext _context;
-
         public AccountRepository(AppDbContext context)
         {
             _context = context;
         }
-        public Task CreateAsync(Account account)
+        public async Task CreateAsync(Account account)
         {
-            throw new NotImplementedException();
+            await _context.Accounts.AddAsync(account);
+            await _context.SaveChangesAsync();
         }
 
-        public Task DeleteAsync(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
-            throw new NotImplementedException();
+            await _context.Accounts.Where(a => a.Id == id).ExecuteDeleteAsync();
         }
 
-        public Task<IReadOnlyList<Account>> GetAllAsync()
+        public async Task<IReadOnlyList<Account>> GetAllAsync()
         {
-            throw new NotImplementedException();
+            var accounts = await _context.Accounts.ToListAsync();
+            return accounts;
         }
 
-        public Task<Account> GetByIdAsync(Guid id)
+        public async Task<Account> GetByIdAsync(Guid id)
         {
-            throw new NotImplementedException();
+            var account = await _context.Accounts.Where(a => a.Id == id).FirstOrDefaultAsync();
+            return account;
         }
 
-        public Task UpdateAsync(Guid id, Account account)
+        public async Task UpdateAsync(Account account)
         {
-            throw new NotImplementedException();
+            await _context.SaveChangesAsync();
+
         }
     }
 }

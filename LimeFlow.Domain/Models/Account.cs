@@ -16,15 +16,6 @@ namespace LimeFlow.Domain.Models
         public DateTime UpdatedAt { get; private set; }
         public string UserId { get; private set; }
 
-        public Account(string name, string bank, string userId)
-        {
-            this.Id = Guid.NewGuid();
-            this.Name = string.IsNullOrWhiteSpace(name) ? throw new ArgumentNullException("Name cannot be null") : name;
-            this.Bank = bank;
-            this.Balance = 0;
-            this.CreatedAt = DateTime.Now;
-            this.UserId = userId;
-        }
 
         public void AddCredit(decimal amount)
         {
