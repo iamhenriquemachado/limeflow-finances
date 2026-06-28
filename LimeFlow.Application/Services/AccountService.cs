@@ -1,5 +1,6 @@
 ﻿using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
+using LimeFlow.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,10 +18,13 @@ namespace LimeFlow.Application.Services
         {
             _repo = repo;
         }
-        async Task<CreateAccountReponseDto> CreateAccountService(CreateAccountRequestDto request)
+        public async Task<CreateAccountReponseDto> CreateAccountService(Account request)
         {
+            await _repo.CreateAsync(request);
 
-            await _repo.CreateAsync();
+            var accountResponseDto = new CreateAccountReponseDto(request.Id, request.Name, request.Bank, request.CreatedAt);
+
+            return accountResponseDto;
         }
 
             
