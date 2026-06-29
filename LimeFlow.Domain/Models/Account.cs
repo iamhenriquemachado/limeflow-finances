@@ -16,6 +16,20 @@ namespace LimeFlow.Domain.Models
         public DateTime UpdatedAt { get; private set; }
         public string UserId { get; private set; }
 
+        public Account(string name, string bank, string userId)
+        {
+            var guid = Guid.NewGuid();
+
+            Id = guid;
+            Name = name;
+            Bank = bank;
+            Balance = 0.0m;
+            CreatedAt = DateTime.UtcNow;
+            UpdatedAt = DateTime.UtcNow;
+            UserId = userId;
+
+        }
+
 
         public void AddCredit(decimal amount)
         {
@@ -29,16 +43,16 @@ namespace LimeFlow.Domain.Models
             this.Balance -= amount;
         }
 
-        public void UpdateName (string name)
+        public void UpdateName(string name)
         {
             Name = name;
         }
 
-        public void UpdateBank (string bank)
+        public void UpdateBank(string bank)
         {
             Bank = bank;
         }
 
-        
+
     }
 }

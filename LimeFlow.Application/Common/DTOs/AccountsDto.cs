@@ -7,10 +7,17 @@ using System.Threading.Tasks;
 namespace LimeFlow.Application.Common.DTOs
 {
 
+    //CREATE
     public record CreateAccountRequestDto(string Name, string Bank);
 
-    public record CreateAccountReponseDto(Guid id, string Name, string Bank, DateTime CreatedAt);
+    public record AccountCreatedResponseDto(Guid id, string Name, string Bank, DateTime CreatedAt);
+
+    // UPDATE
     public record UpdateAccountRequestDto(string Name, string Bank, DateTime LastUpdatedAt);
 
-    public record UpdateAccountResponseDto(string Name, string Bank, DateTime LastUpdatedAt);
+    // GET
+    public record GetAccountRequestDto(int PageNumber, int PageSize);
+    public record AccountSummaryResponseDto(Guid Id, string Name, string Bank, decimal Balance, DateTime CreatedAt);
+
+
 }

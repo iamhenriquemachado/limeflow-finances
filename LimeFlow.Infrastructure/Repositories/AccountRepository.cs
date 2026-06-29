@@ -1,13 +1,7 @@
-﻿using LimeFlow.Application.Common.DTOs;
-using LimeFlow.Application.Common.Interfaces;
+﻿using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Domain.Models;
 using LimeFlow.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LimeFlow.Infrastructure.Repositories
 {

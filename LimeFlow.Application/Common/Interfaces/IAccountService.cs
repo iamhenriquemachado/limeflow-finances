@@ -6,10 +6,10 @@ namespace LimeFlow.Application.Common.Interfaces
 {
     public interface IAccountService
     {
-        Task<CreateAccountReponseDto> CreateAccountService(Account request);
-
-        Task<IEnumerable<CreateAccountReponseDto>> GetAllAccountsService();
-
-        Task<CreateAccountReponseDto> GetAccountByIdService(Guid id);
+        Task<AccountCreatedResponseDto> CreateAsync(CreateAccountRequestDto request);
+        Task DeleteAsync(Guid id);
+        Task<AccountSummaryResponseDto> GetByAsyncId(Guid id);
+        Task<IReadOnlyList<AccountSummaryResponseDto>> GetAllAsync();
+        Task UpdateAsync(UpdateAccountRequestDto request);
     }
 }
