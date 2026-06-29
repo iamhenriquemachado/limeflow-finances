@@ -29,6 +29,16 @@ namespace LimeFlow.Domain.Models
             this.Balance -= amount;
         }
 
+        public void UpdateName (string name)
+        {
+            Name = name;
+        }
+
+        public void UpdateBank (string bank)
+        {
+            Bank = bank;
+        }
+
         
     }
 }
