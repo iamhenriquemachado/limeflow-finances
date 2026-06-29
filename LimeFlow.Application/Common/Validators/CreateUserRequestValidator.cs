@@ -14,7 +14,6 @@ namespace LimeFlow.Application.Common.Validators
         public CreateUserRequestValidator()
         {
             RuleFor(x => x.email).NotEmpty().Must(Functions.IsValidEmailAddress).WithMessage("Invalid email address");
-
             RuleFor(x => x.name).NotEmpty().Length(3, 100).WithMessage("Name cannot be null");
         }
     }

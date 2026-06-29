@@ -12,7 +12,7 @@ namespace LimeFlow.Domain.Models
         public string Name { get; private set; }
         public string Bank { get; private set; }
         public decimal Balance { get; private set; }
-        public DateTime CreatedAt { get; private set; }
+        public DateTime CreatedAt { get; init; }
         public DateTime UpdatedAt { get; private set; }
         public string UserId { get; private set; }
 
