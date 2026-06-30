@@ -33,9 +33,14 @@ namespace LimeFlow.Application.Services
         {
             var accounts = await _repo.GetAllAsync(userId);
 
-            var accountResponseDto = accounts.Select(a => new AccountSummaryResponseDto(a.Id, a.Name, a.Bank, a.Balance, a.CreatedAt)).ToList();
+            if (accounts != null)
+            {
+                var accountResponseDto = accounts.Select(a => new AccountSummaryResponseDto(a.Id, a.Name, a.Bank, a.Balance, a.CreatedAt)).ToList();
 
-            return accountResponseDto;
+                return accountResponseDto;
+            }
+
+            return null;
         }
 
         public async Task<AccountSummaryResponseDto> GetByIdAsync(Guid id)

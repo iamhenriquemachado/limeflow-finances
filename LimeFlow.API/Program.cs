@@ -19,6 +19,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
 
 
 var app = builder.Build();
@@ -28,5 +29,6 @@ app.UseMiddleware<ValidationExceptionMiddleware>();
 app.MapOpenApi();
 app.MapScalarApiReference();
 app.MapUserEndpoints();
+app.MapAccountEndpoints();
 
 app.Run();
