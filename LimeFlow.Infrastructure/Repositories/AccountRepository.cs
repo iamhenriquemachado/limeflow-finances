@@ -23,9 +23,10 @@ namespace LimeFlow.Infrastructure.Repositories
             await _context.Accounts.Where(a => a.Id == id).ExecuteDeleteAsync();
         }
 
-        public async Task<IReadOnlyList<Account>> GetAllAsync()
+        public async Task<IReadOnlyList<Account>> GetAllAsync(Guid userId)
         {
-            var accounts = await _context.Accounts.ToListAsync();
+            var accounts = await _context.Accounts.Where(u => u.Id == userId).ToListAsync();
+
             return accounts;
         }
 

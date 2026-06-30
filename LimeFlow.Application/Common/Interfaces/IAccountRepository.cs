@@ -13,6 +13,6 @@ namespace LimeFlow.Application.Common.Interfaces
         Task UpdateAsync(Account account);
         Task DeleteAsync(Guid id);
         Task<Account> GetByIdAsync(Guid id);
-        Task<IReadOnlyList<Account>> GetAllAsync();
+        Task<IReadOnlyList<Account>> GetAllAsync(Guid userId);
     }
 }

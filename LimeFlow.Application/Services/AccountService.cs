@@ -31,7 +31,7 @@ namespace LimeFlow.Application.Services
 
         public async Task<IReadOnlyList<AccountSummaryResponseDto>> GetAllAsync(Guid userId)
         {
-            var accounts = await _repo.GetAllAsync();
+            var accounts = await _repo.GetAllAsync(userId);
 
             var accountResponseDto = accounts.Select(a => new AccountSummaryResponseDto(a.Id, a.Name, a.Bank, a.Balance, a.CreatedAt)).ToList();
 
