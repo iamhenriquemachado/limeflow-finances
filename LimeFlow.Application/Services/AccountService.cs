@@ -9,9 +9,16 @@ namespace LimeFlow.Application.Services
 
         private readonly IAccountRepository _repo;
 
-        public Task<AccountCreatedResponseDto> CreateAsync(CreateAccountRequestDto request)
+        public async Task<AccountCreatedResponseDto> CreateAsync(CreateAccountRequestDto request)
         {
-            throw new NotImplementedException();
+
+            Account account = new Account(request.Name, request.Bank);
+            await _repo.CreateAsync(account);
+
+            var accountCreatedResponseDto = new AccountCreatedResponseDto(account.Id, account.Name, account.Bank, account.CreatedAt);
+
+            return accountCreatedResponseDto;
+
         }
 
         public Task DeleteAsync(Guid id)
