@@ -8,8 +8,8 @@ namespace LimeFlow.Application.Common.Interfaces
     {
         Task<AccountCreatedResponseDto> CreateAsync(CreateAccountRequestDto request);
         Task DeleteAsync(Guid id);
-        Task<AccountSummaryResponseDto> GetByAsyncId(Guid id);
-        Task<IReadOnlyList<AccountSummaryResponseDto>> GetAllAsync();
+        Task<AccountSummaryResponseDto> GetByIdAsync(Guid id);
+        Task<IReadOnlyList<AccountSummaryResponseDto>> GetAllAsync(Guid userId);
         Task UpdateAsync(UpdateAccountRequestDto request);
     }
 }

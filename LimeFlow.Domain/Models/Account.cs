@@ -16,7 +16,7 @@ namespace LimeFlow.Domain.Models
         public DateTime UpdatedAt { get; private set; }
         public string UserId { get; private set; }
 
-        public Account(string name, string bank)
+        public Account(string name, string bank, string userId)
         {
             var guid = Guid.NewGuid();
 
@@ -26,7 +26,7 @@ namespace LimeFlow.Domain.Models
             Balance = 0.0m;
             CreatedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
-            UserId = "9ecdf6f5-ae48-4622-9dc2-d26224e7748d";
+            UserId = userId;
 
         }
 
@@ -39,7 +39,7 @@ namespace LimeFlow.Domain.Models
 
         public void Debit(decimal amount)
         {
-            if (amount > Balance) throw new ArgumentException("\"Insufficient funds.");
+            if (amount > Balance) throw new ArgumentException("Insufficient funds.");
             this.Balance -= amount;
         }
 
@@ -52,6 +52,7 @@ namespace LimeFlow.Domain.Models
         {
             Bank = bank;
         }
+
 
 
     }

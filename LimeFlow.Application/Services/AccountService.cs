@@ -12,7 +12,7 @@ namespace LimeFlow.Application.Services
         public async Task<AccountCreatedResponseDto> CreateAsync(CreateAccountRequestDto request)
         {
 
-            Account account = new Account(request.Name, request.Bank);
+            Account account = new Account(request.Id, request.Name, request.Bank);
             await _repo.CreateAsync(account);
 
             var accountCreatedResponseDto = new AccountCreatedResponseDto(account.Id, account.Name, account.Bank, account.CreatedAt);
@@ -21,24 +21,51 @@ namespace LimeFlow.Application.Services
 
         }
 
-        public Task DeleteAsync(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
-            throw new NotImplementedException();
+            var account = await _repo.GetByIdAsync(id);
+
+            if (account != null)
+                await _repo.DeleteAsync(id);
         }
 
-        public Task<IReadOnlyList<AccountSummaryResponseDto>> GetAllAsync()
+        public async Task<IReadOnlyList<AccountSummaryResponseDto>> GetAllAsync(Guid userId)
         {
-            throw new NotImplementedException();
+            var accounts = await _repo.GetAllAsync();
+
+            var accountResponseDto = accounts.Select(a => new AccountSummaryResponseDto(a.Id, a.Name, a.Bank, a.Balance, a.CreatedAt)).ToList();
+
+            return accountResponseDto;
         }
 
-        public Task<AccountSummaryResponseDto> GetByAsyncId(Guid id)
+        public async Task<AccountSummaryResponseDto> GetByIdAsync(Guid id)
         {
-            throw new NotImplementedException();
+            var account = await _repo.GetByIdAsync(id);
+
+            if (account != null)
+            {
+                var accountResponseDto = new AccountSummaryResponseDto(account.Id, account.Name, account.Bank, account.Balance, account.CreatedAt);
+                return accountResponseDto;
+
+            }
+
+            return null;
         }
 
-        public Task UpdateAsync(UpdateAccountRequestDto request)
+        public async Task UpdateAsync(UpdateAccountRequestDto request)
         {
-            throw new NotImplementedException();
+            var account = await _repo.GetByIdAsync(request.Id);
+
+            account.UpdateBank(request.Bank);
+            account.UpdateName(request.Name);
+
+            if (account != null)
+            {
+                await _repo.UpdateAsync(account);
+
+            }
+
+
         }
     }
 }
