@@ -1,12 +1,10 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using LimeFlow.Domain.Models.Settings;
+﻿using LimeFlow.Domain.Models.Settings;
 using Microsoft.Extensions.Options;
-using LimeFlow.Domain.Models;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using LimeFlow.Application.Common.DTOs;
 
 namespace LimeFlow.Infrastructure.Auth
 {
@@ -16,14 +14,14 @@ namespace LimeFlow.Infrastructure.Auth
 
 
         public TokenService(IOptions<JwtSettings> settings) => _settings = settings.Value;
-        public string GenerateToken(User user)
+        public string GenerateToken(LoginRequestDto request)
         {
             var key = Encoding.ASCII.GetBytes(_settings.Secret);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]
                 {
-                    new Claim(ClaimTypes.Name, user.Email)
+                    new Claim(ClaimTypes.Name, request.email)
                 }),
                 Expires = DateTime.UtcNow.AddHours(1),
                 SigningCredentials = new SigningCredentials(
@@ -40,6 +38,6 @@ namespace LimeFlow.Infrastructure.Auth
 
     public interface ITokenService
     {
-        string GenerateToken(User user);
+        string GenerateToken(LoginRequestDto request);
     }
 }
