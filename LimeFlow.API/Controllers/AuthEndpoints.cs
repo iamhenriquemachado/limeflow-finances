@@ -1,5 +1,6 @@
 ﻿using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Infrastructure.Auth;
+using Microsoft.AspNetCore.Mvc;
 
 namespace LimeFlow.API.Controllers
 {
@@ -10,7 +11,7 @@ namespace LimeFlow.API.Controllers
         {
             var group = app.MapGroup("api/v1/");
 
-            group.MapPost("/sessions", async (LoginRequestDto request, ITokenService service) =>
+            group.MapPost("/sessions", async (LoginRequestDto request, [FromServices] ITokenService service) =>
             {
 
                 var token = service.GenerateToken(request);
@@ -23,7 +24,7 @@ namespace LimeFlow.API.Controllers
                 });
 
             }).WithName("Login")
-            .WithSummary("Authenticates the user and returns a token")
+            .WithSummary("User Authentication")
             .WithDescription("Validates user credentials and returns a JWT for accessing protected resources.")
             .WithTags("Authentication")
             .Produces<LoginResponseDto>(StatusCodes.Status200OK)

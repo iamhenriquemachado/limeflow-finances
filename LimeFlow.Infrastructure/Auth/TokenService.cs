@@ -14,7 +14,7 @@ namespace LimeFlow.Infrastructure.Auth
 
 
         public TokenService(IOptions<JwtSettings> settings) => _settings = settings.Value;
-        public string GenerateToken(LoginRequestDto request)
+        public async Task<string> GenerateToken(LoginRequestDto request)
         {
             var key = Encoding.ASCII.GetBytes(_settings.Secret);
             var tokenDescriptor = new SecurityTokenDescriptor
@@ -38,6 +38,6 @@ namespace LimeFlow.Infrastructure.Auth
 
     public interface ITokenService
     {
-        string GenerateToken(LoginRequestDto request);
+        Task<string> GenerateToken(LoginRequestDto request);
     }
 }
