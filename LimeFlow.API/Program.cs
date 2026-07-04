@@ -3,26 +3,25 @@ using LimeFlow.API.Middlewares;
 using LimeFlow.Application;
 using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Application.Services;
+using LimeFlow.Domain.Models.Settings;
+using LimeFlow.Infrastructure.Auth;
 using LimeFlow.Infrastructure.Database;
 using LimeFlow.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Scalar.AspNetCore;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 using System.Text;
-using LimeFlow.Infrastructure.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var secret = builder.Configuration["JwtSettings:SecretKey"];
 Console.WriteLine(secret);
 
-if (string.IsNullOrWhiteSpace(secret))
-{
-    throw new Exception("JwtSettings:SecretKey não foi encontrada no appsettings.");
-}
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("JwtSettings"));
 
-
+    
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters

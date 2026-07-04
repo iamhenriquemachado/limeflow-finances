@@ -16,7 +16,7 @@ namespace LimeFlow.Infrastructure.Auth
         public TokenService(IOptions<JwtSettings> settings) => _settings = settings.Value;
         public async Task<string> GenerateToken(LoginRequestDto request)
         {
-            var key = Encoding.ASCII.GetBytes(_settings.Secret);
+            var key = Encoding.ASCII.GetBytes(_settings.SecretKey);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]
