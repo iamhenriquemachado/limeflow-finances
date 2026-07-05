@@ -1,4 +1,6 @@
 ﻿using LimeFlow.Application.Common.DTOs;
+using LimeFlow.Application.Common.Interfaces;
+using LimeFlow.Application.Services;
 using LimeFlow.Infrastructure.Auth;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,10 +13,18 @@ namespace LimeFlow.API.Controllers
         {
             var group = app.MapGroup("api/v1/");
 
-            group.MapPost("/sessions", async (LoginRequestDto request, [FromServices] ITokenService service) =>
+            group.MapPost("/sessions", async (LoginRequestDto request, [FromServices] IUserService service, [FromServices] ITokenService tokenService) =>
             {
+                var user = await service.GetUsersService();
+                var getUserEmail = user.Select(u => u.Email == request.email).FirstOrDefault();
 
-                var token = service.GenerateToken(request);
+                if (getUserEmail == null)
+                {
+                    throw new Exception("Invalid credentials.");
+
+                }
+
+                var token = tokenService.GenerateToken(request);
 
                 return token == null ? Results.Unauthorized() : Results.Ok(new
                 {
