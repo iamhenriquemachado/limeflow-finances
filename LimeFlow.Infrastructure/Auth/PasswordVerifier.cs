@@ -11,14 +11,12 @@ namespace LimeFlow.Infrastructure.Auth
         public Task<bool> VerifyPassword(string password, string storedPasswordHashed)
         {
             bool passwordMatches = BCrypt.Net.BCrypt.EnhancedVerify(password, storedPasswordHashed);
-
-
-
+            return Task.FromResult(passwordMatches);
         }
     }
 
     public interface IPasswordVerifier
     {
-        Task<bool> VerifyPassword(string password);
+        Task<bool> VerifyPassword(string password, string storedPasswordHashed);
     }
 }
