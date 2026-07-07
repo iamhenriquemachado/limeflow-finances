@@ -1,5 +1,6 @@
 ﻿using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Domain.Models;
+using LimeFlow.Infrastructure.Auth;
 using LimeFlow.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,8 @@ namespace LimeFlow.Infrastructure.Repositories
         }
         public async Task CreateAsync(User user)
         {
+
+            
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
         }

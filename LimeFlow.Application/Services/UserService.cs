@@ -1,21 +1,19 @@
 ﻿using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Domain.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LimeFlow.Application.Services
 {
     public class UserService : IUserService
     {
         private readonly IUserRepository _repo;
+        private readonly IPasswordHasher _pass;
 
-        public UserService(IUserRepository repo)
+
+        public UserService(IUserRepository repo, IPasswordHasher pass)
         {
             _repo = repo;
+            _pass = pass;
         }
 
         public async Task<IReadOnlyList<UserResponseDto>> GetUsersService()
@@ -36,12 +34,15 @@ namespace LimeFlow.Application.Services
 
         public async Task<UserResponseDto> CreateUserService(CreateUserRequestDto request)
         {
+
+            var encryptedPassword = _pass.PasswordHasher(request.password);
+
             User user = new User()
             {
                 Id = Guid.NewGuid(),
                 Name = request.name,
                 Email = request.email,
-                Password = request.password,
+                Password = encryptedPassword,
                 CreatedAt = DateTime.UtcNow,
                 LastUpdatedAt = DateTime.UtcNow
 
