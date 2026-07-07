@@ -9,6 +9,6 @@ namespace LimeFlow.Application.Common.Interfaces
 {
     public interface IAuthService
     {
-        Task<LoginResponseDto?> LoginAsync(LoginRequestDto request, CancellationToken ct);
+        Task<LoginResposeDto?> LoginAsync(LoginRequestDto request, CancellationToken ct);
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LimeFlow.Application.Common.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,8 +16,4 @@ namespace LimeFlow.Infrastructure.Auth
         }
     }
 
-    public interface IPasswordVerifier
-    {
-        Task<bool> VerifyPassword(string password, string storedPasswordHashed);
-    }
 }

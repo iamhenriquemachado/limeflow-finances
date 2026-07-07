@@ -7,5 +7,5 @@ using System.Threading.Tasks;
 namespace LimeFlow.Application.Common.DTOs
 {
     public record LoginRequestDto(string email, string password);
-    public record LoginResponseDto(string accessToken, string tokenType, int expiresIn);
+    public record LoginResposeDto(string accessToken, string tokenType, int expiresIn);
 }
