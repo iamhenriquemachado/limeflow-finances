@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using LimeFlow.Application.Common.DTOs;
+using LimeFlow.Application.Common.Interfaces;
 
 namespace LimeFlow.Infrastructure.Auth
 {
@@ -38,8 +39,5 @@ namespace LimeFlow.Infrastructure.Auth
         }
     }
 
-    public interface ITokenService
-    {
-        string GenerateToken(LoginRequestDto request);
-    }
+
 }

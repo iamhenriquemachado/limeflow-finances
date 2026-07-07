@@ -1,4 +1,5 @@
-﻿using LimeFlow.Domain.Models;
+﻿using LimeFlow.Application.Common.DTOs;
+using LimeFlow.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +15,7 @@ namespace LimeFlow.Application.Common.Interfaces
         Task DeleteAsync(Guid id);
         Task<User> GetByIdAsync(Guid id);
         Task<IReadOnlyList<User>> GetAllAsync();
+        Task<UserDataResponseDto> GetByEmailAsync(string email);
 
     }
 }

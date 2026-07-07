@@ -1,6 +1,5 @@
 ﻿using BCrypt.Net;
 using LimeFlow.Application.Common.Interfaces;
-using Microsoft.AspNetCore.Identity;
 
 namespace LimeFlow.Infrastructure.Auth
 {

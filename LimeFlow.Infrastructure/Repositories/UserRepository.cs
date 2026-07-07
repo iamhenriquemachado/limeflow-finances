@@ -1,4 +1,5 @@
-﻿using LimeFlow.Application.Common.Interfaces;
+﻿using LimeFlow.Application.Common.DTOs;
+using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Domain.Models;
 using LimeFlow.Infrastructure.Auth;
 using LimeFlow.Infrastructure.Database;
@@ -55,6 +56,20 @@ namespace LimeFlow.Infrastructure.Repositories
             }
 
 
+        }
+
+        public async Task<UserDataResponseDto> GetByEmailAsync(string email)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(user => user.Email == email);
+            
+            if (user != null)
+            {
+                var userResponseDto = new UserDataResponseDto(user.Id, user.Email, user.Name, user.Password, user.CreatedAt);
+
+                return userResponseDto;
+            }
+
+            return null;
         }
     }
 }
