@@ -35,9 +35,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     };
 });
 
-
-
-
 builder.Services.AddAuthorization();
 
 
@@ -53,6 +50,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
+builder.Services.AddScoped<IPasswordVerifier, PasswordVerifier>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 
 var app = builder.Build();
