@@ -13,22 +13,15 @@ namespace LimeFlow.API.Controllers
         {
             var group = app.MapGroup("api/v1/");
 
-            group.MapPost("/sessions", async (LoginRequestDto request, [FromServices] IUserService service, [FromServices] ITokenService tokenService) =>
+            group.MapPost("/sessions", async (LoginRequestDto request, [FromServices] IAuthService service, CancellationToken ct) =>
             {
-                var user = await service.GetUsersService();
-                var getUserEmail = user.Select(u => u.Email == request.email).FirstOrDefault();
 
-                if (getUserEmail == null)
+                var loginToken = await service.LoginAsync(request, ct);
+
+
+                return loginToken == null ? Results.Unauthorized() : Results.Ok(new
                 {
-                    throw new Exception("Invalid credentials.");
-
-                }
-
-                var token = tokenService.GenerateToken(request);
-
-                return token == null ? Results.Unauthorized() : Results.Ok(new
-                {
-                    accessToken = token,
+                    accessToken = loginToken.accessToken,
                     tokenType = "Bearer",
                     expiresIn = 3600
                 });

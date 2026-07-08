@@ -5,6 +5,6 @@ namespace LimeFlow.Application.Common.Interfaces
 {
     public interface ITokenService
     {
-        string GenerateToken(LoginRequestDto request);
+        string GenerateToken(Guid userId, string name, string email);
     }
 }

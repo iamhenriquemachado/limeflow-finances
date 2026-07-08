@@ -15,27 +15,27 @@ namespace LimeFlow.Infrastructure.Auth
 
 
         public TokenService(IOptions<JwtSettings> settings) => _settings = settings.Value;
-        public string GenerateToken(LoginRequestDto request)
+        public string GenerateToken(Guid userId, string name, string email)
         {
-            var key = Encoding.ASCII.GetBytes(_settings.SecretKey);
+            var key = Encoding.UTF8.GetBytes(_settings.SecretKey);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]
                 {
-                    new Claim(ClaimTypes.Name, request.email)
-                }),
+                    new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+                    new Claim(ClaimTypes.Name, name),
+                    new Claim(ClaimTypes.Email, email),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        }),
                 Expires = DateTime.UtcNow.AddHours(1),
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
                 Issuer = _settings.Issuer,
                 Audience = _settings.Audience
             };
-
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);
-
             return tokenHandler.WriteToken(token);
-
         }
     }
 

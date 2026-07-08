@@ -14,25 +14,29 @@ namespace LimeFlow.Application.Services
         private readonly IPasswordVerifier _verifier;
         private readonly ITokenService _tokenService;
 
-        public AuthService(IUserRepository repo)
+        public AuthService(IUserRepository repo, IPasswordVerifier verifier, ITokenService tokenService)
         {
             _repo = repo;
+            _verifier = verifier;
+            _tokenService = tokenService;
         }
-        public async Task<LoginResposeDto?> LoginAsync(LoginRequestDto request, CancellationToken ct)
+
+        public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request, CancellationToken ct)
         {
             var userData = await _repo.GetByEmailAsync(request.email);
-
-            var validatePasswordHash = await _verifier.VerifyPassword(request.password, userData.Password);
-
-            if (!validatePasswordHash)
+            if (userData is null)
             {
-                throw new Exception("Invalid Credentials.");
+                return null;
             }
 
-            var token = _tokenService.GenerateToken(request);
+            var isValid = await _verifier.VerifyPassword(request.password, userData.Password);
+            if (!isValid)
+            {
+                return null;
+            }
 
-            return new LoginResposeDto(token, "Bearer", 3600); 
-
+            var token = _tokenService.GenerateToken(userData.Id, userData.Name, userData.Email);
+            return new LoginResponseDto(token, "Bearer", 3600);
         }
     }
 }
