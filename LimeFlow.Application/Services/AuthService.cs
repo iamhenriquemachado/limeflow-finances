@@ -30,6 +30,7 @@ namespace LimeFlow.Application.Services
             }
 
             var isValid = await _verifier.VerifyPassword(request.password, userData.Password);
+
             if (!isValid)
             {
                 return null;

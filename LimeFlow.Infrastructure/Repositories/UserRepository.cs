@@ -64,7 +64,7 @@ namespace LimeFlow.Infrastructure.Repositories
             
             if (user != null)
             {
-                var userResponseDto = new UserDataResponseDto(user.Id, user.Email, user.Name, user.Password, user.CreatedAt);
+                var userResponseDto = new UserDataResponseDto(user.Id, user.Email, user.Password, user.Name, user.CreatedAt);
 
                 return userResponseDto;
             }

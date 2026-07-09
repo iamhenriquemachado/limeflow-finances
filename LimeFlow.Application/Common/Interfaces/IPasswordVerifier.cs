@@ -11,3 +11,5 @@ namespace LimeFlow.Application.Common.Interfaces
         Task<bool> VerifyPassword(string password, string storedPasswordHashed);
     }
 }
+
+
