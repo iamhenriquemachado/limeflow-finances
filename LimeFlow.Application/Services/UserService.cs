@@ -1,6 +1,7 @@
 ﻿using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Domain.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace LimeFlow.Application.Services
 {
@@ -35,7 +36,16 @@ namespace LimeFlow.Application.Services
         public async Task<UserResponseDto> CreateUserService(CreateUserRequestDto request)
         {
 
+            var userData = await _repo.GetByEmailAsync(request.email);
+
+            if (userData is null)
+            {
+                return null;
+            }
+
             var encryptedPassword = _pass.PasswordHasher(request.password);
+
+
 
             User user = new User()
             {

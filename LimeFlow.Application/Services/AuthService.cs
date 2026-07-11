@@ -19,6 +19,7 @@ namespace LimeFlow.Application.Services
         public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request, CancellationToken ct)
         {
             var userData = await _repo.GetByEmailAsync(request.email);
+
             if (userData is null)
             {
                 return null;
