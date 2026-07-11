@@ -1,5 +1,7 @@
 ﻿using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
+using LimeFlow.Domain.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace LimeFlow.API.Controllers
 {
@@ -18,7 +20,32 @@ namespace LimeFlow.API.Controllers
               .WithDescription("Retrieves a collection of all financial accounts linked to a specific user ID.")
               .WithTags("Accounts")
               .Produces<IReadOnlyList<AccountSummaryResponseDto>>(StatusCodes.Status200OK)
-              .Produces(StatusCodes.Status404NotFound);
+              .Produces(StatusCodes.Status404NotFound)
+              .RequireAuthorization();
+
+            group.MapPost("/accounts/", async (CreateAccountRequestDto request, IAccountService service) =>
+            {
+                var createAccount = await service.CreateAsync(request);
+
+                var accountCreatedResponse = new AccountCreatedResponseDto(createAccount.Id, createAccount.Name, createAccount.Bank, createAccount.CreatedAt);
+                return Results.Ok(new
+                {
+
+                    id = accountCreatedResponse.Id,
+                    name = accountCreatedResponse.Name,
+                    bank = accountCreatedResponse.Bank,
+                    createdAt = accountCreatedResponse.CreatedAt
+
+                });
+
+
+            }).WithName("CreateNewAccount")
+               .WithSummary("Create Account")
+               .WithDescription("Create a New User Account.")
+               .WithTags("Accounts")
+               .Produces<AccountCreatedResponseDto>(StatusCodes.Status200OK)
+               .Produces(StatusCodes.Status401Unauthorized)
+               .RequireAuthorization();
         }
     }
 }

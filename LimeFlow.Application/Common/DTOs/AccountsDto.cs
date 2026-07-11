@@ -10,7 +10,7 @@ namespace LimeFlow.Application.Common.DTOs
     //CREATE
     public record CreateAccountRequestDto(string Id, string Name, string Bank);
 
-    public record AccountCreatedResponseDto(Guid id, string Name, string Bank, DateTime CreatedAt);
+    public record AccountCreatedResponseDto(Guid Id, string Name, string Bank, DateTime CreatedAt);
 
     // UPDATE
     public record UpdateAccountRequestDto(Guid Id, string Name, string Bank, DateTime LastUpdatedAt);

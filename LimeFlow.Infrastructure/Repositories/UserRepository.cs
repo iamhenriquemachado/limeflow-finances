@@ -1,7 +1,6 @@
 ﻿using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Domain.Models;
-using LimeFlow.Infrastructure.Auth;
 using LimeFlow.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
