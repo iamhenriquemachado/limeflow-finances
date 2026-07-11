@@ -1,7 +1,7 @@
 ﻿using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Domain.Models;
-using Microsoft.AspNetCore.Http;
+using LimeFlow.Application.Common.Exceptions;
 
 namespace LimeFlow.Application.Services
 {
@@ -38,9 +38,9 @@ namespace LimeFlow.Application.Services
 
             var userData = await _repo.GetByEmailAsync(request.email);
 
-            if (userData is null)
+            if (userData is not null)
             {
-                return null;
+                throw new ConflictException("Email already registered.");
             }
 
             var encryptedPassword = _pass.PasswordHasher(request.password);

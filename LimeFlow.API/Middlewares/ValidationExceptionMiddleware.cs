@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using LimeFlow.Application.Common.Exceptions;
 
 namespace LimeFlow.API.Middlewares
 {
@@ -37,6 +38,20 @@ namespace LimeFlow.API.Middlewares
 
                 await context.Response.WriteAsJsonAsync(problemDetails);
 
+            }
+
+            catch (ConflictException ex)
+            {
+                context.Response.StatusCode = StatusCodes.Status409Conflict;
+                context.Response.ContentType = "application/problem+json";
+
+                var problemDetails = new HttpValidationProblemDetails
+                {
+                    Status = StatusCodes.Status409Conflict,
+                    Title = "Conflict",
+                    Detail = ex.Message
+
+                };
             }
         }
 
