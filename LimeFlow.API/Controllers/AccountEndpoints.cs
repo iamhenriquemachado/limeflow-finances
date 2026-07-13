@@ -2,6 +2,8 @@
 using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Domain.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace LimeFlow.API.Controllers
 {
@@ -11,10 +13,12 @@ namespace LimeFlow.API.Controllers
         {
             var group = app.MapGroup("/api/v1");
 
-            group.MapGet("/accounts/{userId:guid}/accounts", async (Guid userId, IAccountService service) =>
+            group.MapGet("/accounts", async (ClaimsPrincipal user, IAccountService service) =>
             {
+                var userId = Guid.Parse(user.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
                 var accounts = await service.GetAllAsync(userId);
                 return Results.Ok(accounts);
+
             }).WithName("GetAllUserAccounts")
               .WithSummary("Get All User Accounts")
               .WithDescription("Retrieves a collection of all financial accounts linked to a specific user ID.")

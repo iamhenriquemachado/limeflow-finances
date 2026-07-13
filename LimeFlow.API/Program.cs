@@ -16,7 +16,6 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 var secret = builder.Configuration["JwtSettings:SecretKey"];
-Console.WriteLine(secret);
 
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
@@ -27,7 +26,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secret)),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
@@ -63,6 +62,7 @@ app.UseExceptionHandler();
 app.UseMiddleware<ValidationExceptionMiddleware>();
 app.MapOpenApi();
 app.MapScalarApiReference();
+
 app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapAccountEndpoints();
