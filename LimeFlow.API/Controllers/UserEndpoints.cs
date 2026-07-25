@@ -1,6 +1,8 @@
 ﻿using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
+using LimeFlow.Domain.Models;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 
 namespace LimeFlow.API.Controllers
@@ -62,6 +64,14 @@ namespace LimeFlow.API.Controllers
               .WithDescription("Deletes a user and returns a 204 NoContent status response.")
               .WithTags("Users")
               .Produces(StatusCodes.Status204NoContent);
+
+            group.MapGet("/users/", async (ClaimsPrincipal user, IUserService service) =>
+            {
+                Guid userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+                var userData = await service.GetUserByIdService(userId);
+
+                Results.Ok(userData);
+            }).RequireAuthorization();
         }
 
 

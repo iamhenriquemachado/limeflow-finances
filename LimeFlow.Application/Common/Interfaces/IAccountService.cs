@@ -1,5 +1,4 @@
 ﻿using LimeFlow.Application.Common.DTOs;
-using LimeFlow.Domain.Models;
 
 
 namespace LimeFlow.Application.Common.Interfaces
