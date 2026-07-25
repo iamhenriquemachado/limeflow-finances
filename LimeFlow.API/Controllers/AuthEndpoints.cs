@@ -1,7 +1,5 @@
 ﻿using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
-using LimeFlow.Application.Services;
-using LimeFlow.Infrastructure.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LimeFlow.API.Controllers
@@ -32,6 +30,17 @@ namespace LimeFlow.API.Controllers
             .WithTags("Authentication")
             .Produces<LoginResponseDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized);
+
+            group.MapPost("/register", async (CreateUserRequestDto request, IUserService service, CancellationToken ct) =>
+            {
+                var user = await service.CreateUserService(request);
+                return Results.Ok(new
+                {
+                    message = "User created successfully.",
+                    data = new CreatedUserResponseDto(user.Id, user.Name)
+                });
+
+            });
         }
     }
 }

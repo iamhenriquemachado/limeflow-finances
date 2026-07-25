@@ -7,4 +7,5 @@ using System.Threading.Tasks;
 namespace LimeFlow.Application.Common.DTOs
 {
     public record CreateUserRequestDto(string name, string email, string password);
+    public record CreatedUserResponseDto (Guid userId, string email);
 }
