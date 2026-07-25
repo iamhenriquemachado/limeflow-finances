@@ -39,8 +39,13 @@ namespace LimeFlow.API.Controllers
                     message = "User created successfully.",
                     data = new CreatedUserResponseDto(user.Id, user.Name)
                 });
-
-            });
+            }).WithName("Register")
+                .WithSummary("Register a New User")
+                .WithDescription("Create a new user in the system.")
+                .WithTags("Register")
+                .Produces<LoginResponseDto>(StatusCodes.Status200OK)
+                .Produces(StatusCodes.Status409Conflict);
+            ;
         }
     }
 }
