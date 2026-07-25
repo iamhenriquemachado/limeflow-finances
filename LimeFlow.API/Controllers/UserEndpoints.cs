@@ -65,12 +65,12 @@ namespace LimeFlow.API.Controllers
               .WithTags("Users")
               .Produces(StatusCodes.Status204NoContent);
 
-            group.MapGet("/users/", async (ClaimsPrincipal user, IUserService service) =>
+            group.MapGet("/users/me", async (ClaimsPrincipal user, IUserService service) =>
             {
                 Guid userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
                 var userData = await service.GetUserByIdService(userId);
 
-                Results.Ok(userData);
+                return Results.Ok(userData);
             }).RequireAuthorization();
         }
 
