@@ -71,7 +71,9 @@ namespace LimeFlow.API.Controllers
                 var userData = await service.GetUserByIdService(userId);
 
                 return Results.Ok(userData);
-            }).RequireAuthorization();
+            }).WithName("Return user data")
+            .WithTags("Users")
+            .RequireAuthorization();
         }
 
 
