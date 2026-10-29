@@ -14,9 +14,9 @@ namespace LimeFlow.Domain.Models
         public decimal Balance { get; private set; }
         public DateTime CreatedAt { get; init; }
         public DateTime UpdatedAt { get; private set; }
-        public string UserId { get; private set; }
+        public Guid UserId { get; private set; }
 
-        public Account(string name, string bank, string userId)
+        public Account(string name, string bank, Guid userId)
         {
             var guid = Guid.NewGuid();
 

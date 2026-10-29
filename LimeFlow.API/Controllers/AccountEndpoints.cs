@@ -11,18 +11,18 @@ namespace LimeFlow.API.Controllers
         {
             var group = app.MapGroup("/api/v1");
 
-            group.MapGet("/accounts", async (ClaimsPrincipal user, IAccountService service) =>
+            group.MapGet("/accounts/{id:guid}", async (Guid id, ClaimsPrincipal user, IAccountService service) =>
             {
-                var userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+                var claim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                Console.WriteLine(userId);
+                if (claim is null || !Guid.TryParse(claim, out var userId) || id != userId)
+                    return Results.NotFound();
 
                 var accounts = await service.GetAllAsync(userId);
-
                 return Results.Ok(accounts);
 
             }).WithName("GetAllUserAccounts")
-              .WithSummary("Get All User Accounts")
+              .WithSummary("Get user account")
               .WithDescription("Retrieves a collection of all financial accounts linked to a specific user ID.")
               .WithTags("Accounts")
               .Produces<IReadOnlyList<AccountSummaryResponseDto>>(StatusCodes.Status200OK)
@@ -46,7 +46,7 @@ namespace LimeFlow.API.Controllers
 
 
             }).WithName("CreateNewAccount")
-               .WithSummary("Create Account")
+               .WithSummary("Create account")
                .WithDescription("Create a New User Account.")
                .WithTags("Accounts")
                .Produces<AccountCreatedResponseDto>(StatusCodes.Status200OK)

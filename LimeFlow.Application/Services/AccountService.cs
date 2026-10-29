@@ -9,10 +9,15 @@ namespace LimeFlow.Application.Services
 
         private readonly IAccountRepository _repo;
 
-        public async Task<AccountCreatedResponseDto> CreateAsync(CreateAccountRequestDto request)
+        public AccountService(IAccountRepository repo)
+        {
+            _repo = repo;
+        }
+
+        public async Task<AccountCreatedResponseDto> CreateAsync(CreateAccountRequestDto request, Guid id)
         {
 
-            Account account = new Account(request.Id, request.Name, request.Bank);
+            Account account = new Account(request.Name, request.Bank, id);
             await _repo.CreateAsync(account);
 
             var accountCreatedResponseDto = new AccountCreatedResponseDto(account.Id, account.Name, account.Bank, account.CreatedAt);
