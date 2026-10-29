@@ -25,27 +25,12 @@ namespace LimeFlow.API.Controllers
                 });
 
             }).WithName("Login")
-            .WithSummary("User Authentication")
+            .WithSummary("Auth")
             .WithDescription("Validates user credentials and returns a JWT for accessing protected resources.")
             .WithTags("Authentication")
             .Produces<LoginResponseDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized);
 
-            group.MapPost("/register", async (CreateUserRequestDto request, IUserService service, CancellationToken ct) =>
-            {
-                var user = await service.CreateUserService(request);
-                return Results.Ok(new
-                {
-                    message = "User created successfully.",
-                    data = new CreatedUserResponseDto(user.Id, user.Name)
-                });
-            }).WithName("Register")
-                .WithSummary("Register a New User")
-                .WithDescription("Create a new user in the system.")
-                .WithTags("Register")
-                .Produces<LoginResponseDto>(StatusCodes.Status200OK)
-                .Produces(StatusCodes.Status409Conflict);
-            ;
         }
     }
 }

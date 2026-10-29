@@ -14,8 +14,9 @@ namespace LimeFlow.API.Controllers
         {
             var group = app.MapGroup("/api/v1");
 
-            group.MapGet("/users", async (IUserService service) =>
+            group.MapGet("/users", async (IUserService service, ClaimsPrincipal user) =>
             {
+                var claims = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var users = await service.GetUsersService();
                 return Results.Ok(users);
 
@@ -25,7 +26,8 @@ namespace LimeFlow.API.Controllers
             .WithTags("Users")
             .Produces<List<UserResponseDto>>(StatusCodes.Status200OK, "application/json")
             .Produces(StatusCodes.Status401Unauthorized, typeof(void), "application/json")
-            .Produces<HttpValidationProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json");
+            .Produces<HttpValidationProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json")
+            .RequireAuthorization();
 
 
             group.MapGet("/users/{id:guid}", async (Guid id, IUserService service) =>
@@ -34,7 +36,7 @@ namespace LimeFlow.API.Controllers
                 return Results.Ok(user);
 
             }).WithName("GetUserById")
-              .WithSummary("Get User By Id")
+              .WithSummary("Get user by Id")
               .WithDescription("Return a user.")
               .WithTags("Users")
               .Produces<UserResponseDto>(StatusCodes.Status200OK)
@@ -48,22 +50,30 @@ namespace LimeFlow.API.Controllers
 
 
             }).WithName("CreateUser")
-            .WithSummary("Create a New User")
+            .WithSummary("Create a new user")
             .WithDescription("Creates a new user and returns it with a 201 Created status and Location Header.")
             .WithTags("Users")
             .Produces<UserResponseDto>(StatusCodes.Status201Created)
             .Produces<HttpValidationProblemDetails>(StatusCodes.Status400BadRequest);
 
-            group.MapDelete("/users/{id:guid}", async (Guid id, IUserService service) =>
+            group.MapDelete("/users/{id:guid}", async (Guid id, ClaimsPrincipal user, IUserService service) =>
             {
+                var claim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (claim is null || !Guid.TryParse(claim, out var userId) || id != userId)
+                    return Results.NotFound();
+
                 await service.DeleteUserService(id);
                 return Results.NoContent();
 
+
             }).WithName("DeleteUser")
-              .WithSummary("Delete a User by id")
+              .WithSummary("Delete a user by Id")
               .WithDescription("Deletes a user and returns a 204 NoContent status response.")
               .WithTags("Users")
-              .Produces(StatusCodes.Status204NoContent);
+              .Produces(StatusCodes.Status204NoContent)
+              .Produces(StatusCodes.Status404NotFound)
+              .RequireAuthorization();
 
             group.MapGet("/users/me", async (ClaimsPrincipal user, IUserService service) =>
             {
@@ -72,7 +82,11 @@ namespace LimeFlow.API.Controllers
 
                 return Results.Ok(userData);
             }).WithName("Return user data")
+            .WithSummary("Get user data")
+            .WithDescription("Retrieves the profile data of the authenticated user based on their unique identifier (GUID).")
             .WithTags("Users")
+            .Produces(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
             .RequireAuthorization();
         }
 
