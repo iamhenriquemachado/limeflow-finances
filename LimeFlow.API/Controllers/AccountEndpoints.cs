@@ -29,9 +29,15 @@ namespace LimeFlow.API.Controllers
               .Produces(StatusCodes.Status404NotFound)
               .RequireAuthorization();
 
-            group.MapPost("/accounts/", async (CreateAccountRequestDto request, IAccountService service) =>
+            group.MapPost("/accounts/", async (Guid id, ClaimsPrincipal user, CreateAccountRequestDto request, IAccountService service) =>
             {
-                var createAccount = await service.CreateAsync(request);
+                var createAccount = await service.CreateAsync(request, id);
+
+                var claim = user.FindFirst(ClaimTypes
+                    .NameIdentifier)?.Value;
+
+                if (claim is null || !Guid.TryParse(claim, out var userId) || id != userId)
+                    return Results.NotFound();
 
                 var accountCreatedResponse = new AccountCreatedResponseDto(createAccount.Id, createAccount.Name, createAccount.Bank, createAccount.CreatedAt);
                 return Results.Ok(new

@@ -42,6 +42,19 @@ namespace LimeFlow.API.Controllers
               .Produces<UserResponseDto>(StatusCodes.Status200OK)
               .Produces<UserResponseDto>(StatusCodes.Status404NotFound);
 
+            group.MapGet("/users/me", async (ClaimsPrincipal user, IUserService service) =>
+            {
+                Guid userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+                var userData = await service.GetUserByIdService(userId);
+
+                return Results.Ok(userData);
+            }).WithName("Return user data")
+            .WithSummary("Get user data")
+            .WithDescription("Retrieves the profile data of the authenticated user based on their unique identifier (GUID).")
+            .WithTags("Users")
+            .Produces(StatusCodes.Status200OK)
+            .RequireAuthorization();
+
 
             group.MapPost("/users", async ([FromBody] CreateUserRequestDto request, IUserService service) =>
             {
@@ -54,7 +67,13 @@ namespace LimeFlow.API.Controllers
             .WithDescription("Creates a new user and returns it with a 201 Created status and Location Header.")
             .WithTags("Users")
             .Produces<UserResponseDto>(StatusCodes.Status201Created)
-            .Produces<HttpValidationProblemDetails>(StatusCodes.Status400BadRequest);
+            .Produces<HttpValidationProblemDetails>(StatusCodes.Status400BadRequest)
+            .Produces<HttpValidationProblemDetails>(StatusCodes.Status409Conflict);
+
+            group.MapPut("/users", async ([FromBody] UpdateUserRequestDto request, IUserService service) =>
+            {
+                
+            });
 
             group.MapDelete("/users/{id:guid}", async (Guid id, ClaimsPrincipal user, IUserService service) =>
             {
@@ -75,19 +94,7 @@ namespace LimeFlow.API.Controllers
               .Produces(StatusCodes.Status404NotFound)
               .RequireAuthorization();
 
-            group.MapGet("/users/me", async (ClaimsPrincipal user, IUserService service) =>
-            {
-                Guid userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-                var userData = await service.GetUserByIdService(userId);
 
-                return Results.Ok(userData);
-            }).WithName("Return user data")
-            .WithSummary("Get user data")
-            .WithDescription("Retrieves the profile data of the authenticated user based on their unique identifier (GUID).")
-            .WithTags("Users")
-            .Produces(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound)
-            .RequireAuthorization();
         }
 
 

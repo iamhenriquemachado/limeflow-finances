@@ -14,6 +14,44 @@ namespace LimeFlow.Infrastructure.Repositories
         {
             _context = context;
         }
+        public async Task<IReadOnlyList<User>> GetAllAsync()
+        {
+            var users = await _context.Users.ToListAsync();
+            return users;
+        }
+
+        public async Task<User> GetByIdAsync(Guid id)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(user => user.Id == id);
+            return user;
+        }
+
+        public async Task UpdateAsync(Guid id, User user)
+        {
+            var u = await _context.Users.FirstOrDefaultAsync(user => user.Id == id);
+
+            if (u != null)
+            {
+                u.Name = user.Name;
+                u.Password = user.Password;
+
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<UserDataResponseDto> GetByEmailAsync(string email)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(user => user.Email == email);
+
+            if (user != null)
+            {
+                var userResponseDto = new UserDataResponseDto(user.Id, user.Email, user.Password, user.Name, user.CreatedAt);
+
+                return userResponseDto;
+            }
+
+            return null;
+        }
         public async Task CreateAsync(User user)
         {
 
@@ -28,47 +66,6 @@ namespace LimeFlow.Infrastructure.Repositories
 
         }
 
-        public async Task<IReadOnlyList<User>> GetAllAsync()
-        {
-            var users = await _context.Users.ToListAsync();
-            return users;
-        }
 
-        public async Task<User> GetByIdAsync(Guid id)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(user => user.Id == id);
-            return user;
-        }
-
-        public async Task UpdateUserAsync(Guid id, User user)
-        {
-            var u = await _context.Users.FirstOrDefaultAsync(user => user.Id == id);
-
-            if (u != null)
-            {
-                u.Id = user.Id;
-                u.Name = user.Name;
-                u.Email = user.Email;
-                u.Password = user.Password;
-
-                await _context.SaveChangesAsync();
-            }
-
-
-        }
-
-        public async Task<UserDataResponseDto> GetByEmailAsync(string email)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(user => user.Email == email);
-            
-            if (user != null)
-            {
-                var userResponseDto = new UserDataResponseDto(user.Id, user.Email, user.Password, user.Name, user.CreatedAt);
-
-                return userResponseDto;
-            }
-
-            return null;
-        }
     }
 }

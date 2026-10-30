@@ -36,22 +36,22 @@ namespace LimeFlow.Application.Services
         public async Task<UserResponseDto> CreateUserService(CreateUserRequestDto request)
         {
 
-            var userData = await _repo.GetByEmailAsync(request.email);
+            var userData = await _repo.GetByEmailAsync(request.Email);
 
             if (userData is not null)
             {
                 throw new ConflictException("Email already registered.");
             }
 
-            var encryptedPassword = _pass.PasswordHasher(request.password);
+            var encryptedPassword = _pass.PasswordHasher(request.Password);
 
 
 
             User user = new User()
             {
                 Id = Guid.NewGuid(),
-                Name = request.name,
-                Email = request.email,
+                Name = request.Name,
+                Email = request.Email,
                 Password = encryptedPassword,
                 CreatedAt = DateTime.UtcNow,
                 LastUpdatedAt = DateTime.UtcNow
