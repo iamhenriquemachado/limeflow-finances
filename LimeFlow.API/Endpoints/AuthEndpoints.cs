@@ -1,36 +1,34 @@
-﻿using LimeFlow.Application.Common.DTOs;
+﻿using LimeFlow.API.Infrastructure;
+using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace LimeFlow.API.Controllers
+namespace LimeFlow.API.Endpoints;
+
+public static class AuthEndpoints
 {
-    public static class AuthEndpoints
+    public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
-
-        public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
-        {
-            var group = app.MapGroup("api/v1/");
-
-            group.MapPost("/sessions", async (LoginRequestDto request, [FromServices] IAuthService service, CancellationToken ct) =>
-            {
-
-                var loginToken = await service.LoginAsync(request, ct);
-
-
-                return loginToken == null ? Results.Unauthorized() : Results.Ok(new
-                {
-                    accessToken = loginToken.accessToken,
-                    tokenType = "Bearer",
-                    expiresIn = 3600
-                });
-
-            }).WithName("Login")
-            .WithSummary("Auth")
-            .WithDescription("Validates user credentials and returns a JWT for accessing protected resources.")
+        var group = app.MapGroup("/api/v1/sessions")
             .WithTags("Authentication")
-            .Produces<LoginResponseDto>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized);
+            .AllowAnonymous();
 
-        }
+        group.MapPost("/", Login)
+            .WithName("Login")
+            .WithSummary("Authenticate a user")
+            .WithDescription("Validates the credentials and returns a JWT for accessing protected resources.")
+            .WithValidation<LoginRequest>()
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
+
+        return app;
+    }
+
+    private static async Task<Ok<LoginResponse>> Login(
+        LoginRequest request,
+        IAuthService authService,
+        CancellationToken ct)
+    {
+        var response = await authService.LoginAsync(request, ct);
+        return TypedResults.Ok(response);
     }
 }

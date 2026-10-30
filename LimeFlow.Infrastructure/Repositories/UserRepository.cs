@@ -1,71 +1,29 @@
-﻿using LimeFlow.Application.Common.DTOs;
-using LimeFlow.Application.Common.Interfaces;
-using LimeFlow.Domain.Models;
-using LimeFlow.Infrastructure.Database;
+﻿using LimeFlow.Application.Common.Interfaces;
+using LimeFlow.Domain.Entities;
+using LimeFlow.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace LimeFlow.Infrastructure.Repositories
+namespace LimeFlow.Infrastructure.Repositories;
+
+public class UserRepository : IUserRepository
 {
-    public class UserRepository : IUserRepository
+    private readonly AppDbContext _context;
+
+    public UserRepository(AppDbContext context)
     {
-        private readonly AppDbContext _context;
-
-        public UserRepository(AppDbContext context)
-        {
-            _context = context;
-        }
-        public async Task<IReadOnlyList<User>> GetAllAsync()
-        {
-            var users = await _context.Users.ToListAsync();
-            return users;
-        }
-
-        public async Task<User> GetByIdAsync(Guid id)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(user => user.Id == id);
-            return user;
-        }
-
-        public async Task UpdateAsync(Guid id, User user)
-        {
-            var u = await _context.Users.FirstOrDefaultAsync(user => user.Id == id);
-
-            if (u != null)
-            {
-                u.Name = user.Name;
-                u.Password = user.Password;
-
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        public async Task<UserDataResponseDto> GetByEmailAsync(string email)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(user => user.Email == email);
-
-            if (user != null)
-            {
-                var userResponseDto = new UserDataResponseDto(user.Id, user.Email, user.Password, user.Name, user.CreatedAt);
-
-                return userResponseDto;
-            }
-
-            return null;
-        }
-        public async Task CreateAsync(User user)
-        {
-
-            
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
-        }
-        
-        public async Task DeleteAsync(Guid id)
-        {
-            var userFound = await _context.Users.Where(user => user.Id == id).ExecuteDeleteAsync();
-
-        }
-
-
+        _context = context;
     }
+
+    public Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
+        _context.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
+
+    public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default) =>
+        _context.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
+
+    public Task<bool> EmailExistsAsync(string email, CancellationToken ct = default) =>
+        _context.Users.AnyAsync(u => u.Email == email, ct);
+
+    public void Add(User user) => _context.Users.Add(user);
+
+    public void Remove(User user) => _context.Users.Remove(user);
 }

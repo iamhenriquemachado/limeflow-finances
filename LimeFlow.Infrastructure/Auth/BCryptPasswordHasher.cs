@@ -1,17 +1,14 @@
-﻿using BCrypt.Net;
-using LimeFlow.Application.Common.Interfaces;
+﻿using LimeFlow.Application.Common.Interfaces;
 
-namespace LimeFlow.Infrastructure.Auth
+namespace LimeFlow.Infrastructure.Auth;
+
+public class BCryptPasswordHasher : IPasswordHasher
 {
-    public class BCryptPasswordHasher : IPasswordHasher
-    {
-        public string PasswordHasher(string password)
-        {
-            var passwordHash = BCrypt.Net.BCrypt.EnhancedHashPassword(password, 12);
-            return passwordHash;
+    private const int WorkFactor = 12;
 
-        }
-    }
+    public string Hash(string password) =>
+        BCrypt.Net.BCrypt.EnhancedHashPassword(password, WorkFactor);
 
-
+    public bool Verify(string password, string passwordHash) =>
+        BCrypt.Net.BCrypt.EnhancedVerify(password, passwordHash);
 }

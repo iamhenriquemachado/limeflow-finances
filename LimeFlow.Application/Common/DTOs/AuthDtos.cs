@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace LimeFlow.Application.Common.DTOs;
 
-namespace LimeFlow.Application.Common.DTOs
-{
-    public record LoginRequestDto(string email, string password);
-    public record LoginResponseDto(string accessToken, string tokenType, int expiresIn);
-}
+public record LoginRequest(string Email, string Password);
+
+public record LoginResponse(string AccessToken, string TokenType, int ExpiresIn);

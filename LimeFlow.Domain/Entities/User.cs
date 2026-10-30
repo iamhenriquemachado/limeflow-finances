@@ -1,17 +1,37 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+﻿namespace LimeFlow.Domain.Entities;
 
-namespace LimeFlow.Domain.Models
+public class User
 {
-    public class User
+    public Guid Id { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public string Email { get; private set; } = string.Empty;
+    public string PasswordHash { get; private set; } = string.Empty;
+    public DateTime CreatedAt { get; private set; }
+    public DateTime UpdatedAt { get; private set; }
+
+    private User() { }
+
+    public User(string name, string email, string passwordHash)
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; }
-        public string Email { get; set; }
+        Id = Guid.NewGuid();
+        Name = name.Trim();
+        Email = NormalizeEmail(email);
+        PasswordHash = passwordHash;
+        CreatedAt = DateTime.UtcNow;
+        UpdatedAt = CreatedAt;
+    }
 
-        public string Password { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime LastUpdatedAt { get; set; }
+    public static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
 
+    public void UpdateProfile(string name)
+    {
+        Name = name.Trim();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ChangePassword(string passwordHash)
+    {
+        PasswordHash = passwordHash;
+        UpdatedAt = DateTime.UtcNow;
     }
 }

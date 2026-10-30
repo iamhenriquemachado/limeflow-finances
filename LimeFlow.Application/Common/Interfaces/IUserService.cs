@@ -1,19 +1,12 @@
 ﻿using LimeFlow.Application.Common.DTOs;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace LimeFlow.Application.Common.Interfaces
+namespace LimeFlow.Application.Common.Interfaces;
+
+public interface IUserService
 {
-    public interface IUserService
-    {
-        Task<IReadOnlyList<UserResponseDto>> GetUsersService();
-        Task<UserResponseDto> GetUserByIdService(Guid id);
-        Task<UserResponseDto> CreateUserService(CreateUserRequestDto request);
-        Task DeleteUserService(Guid id);
-
-
-    }
+    Task<UserResponse> CreateAsync(CreateUserRequest request, CancellationToken ct = default);
+    Task<UserResponse> GetCurrentAsync(CancellationToken ct = default);
+    Task<UserResponse> UpdateCurrentAsync(UpdateUserRequest request, CancellationToken ct = default);
+    Task ChangePasswordAsync(ChangePasswordRequest request, CancellationToken ct = default);
+    Task DeleteCurrentAsync(CancellationToken ct = default);
 }

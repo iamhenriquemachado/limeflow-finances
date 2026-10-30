@@ -1,18 +1,11 @@
-﻿using LimeFlow.Domain.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using LimeFlow.Domain.Entities;
 
-namespace LimeFlow.Application.Common.Interfaces
+namespace LimeFlow.Application.Common.Interfaces;
+
+public interface IAccountRepository
 {
-    public interface IAccountRepository
-    {
-        Task CreateAsync(Account account);
-        Task UpdateAsync(Account account);
-        Task DeleteAsync(Guid id);
-        Task<Account> GetByIdAsync(Guid id);
-        Task<IReadOnlyList<Account>> GetAllAsync(Guid userId);
-    }
+    Task<Account?> GetByIdAsync(Guid id, Guid userId, CancellationToken ct = default);
+    Task<IReadOnlyList<Account>> GetAllAsync(Guid userId, CancellationToken ct = default);
+    void Add(Account account);
+    void Remove(Account account);
 }

@@ -1,6 +1,270 @@
-@LimeFlow.API_HostAddress = http://localhost:5138
+@host = http://localhost:5138
+@token = {{login.response.body.accessToken}}
+@accountId = 00000000-0000-0000-0000-000000000000
+@categoryId = 00000000-0000-0000-0000-000000000000
+@transactionId = 00000000-0000-0000-0000-000000000000
+@budgetId = 00000000-0000-0000-0000-000000000000
+@goalId = 00000000-0000-0000-0000-000000000000
 
-GET {{LimeFlow.API_HostAddress}}/weatherforecast/
-Accept: application/json
+### Register
+POST {{host}}/api/v1/users
+Content-Type: application/json
 
-###
+{
+  "name": "Ada Lovelace",
+  "email": "ada@limeflow.dev",
+  "password": "Secret123"
+}
+
+### Login
+# @name login
+POST {{host}}/api/v1/sessions
+Content-Type: application/json
+
+{
+  "email": "ada@limeflow.dev",
+  "password": "Secret123"
+}
+
+### Get current user
+GET {{host}}/api/v1/users/me
+Authorization: Bearer {{token}}
+
+### Update current user
+PUT {{host}}/api/v1/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Ada Lovelace"
+}
+
+### Change password
+PATCH {{host}}/api/v1/users/me/password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "Secret123",
+  "newPassword": "Secret456"
+}
+
+### Delete current user
+DELETE {{host}}/api/v1/users/me
+Authorization: Bearer {{token}}
+
+### List accounts
+GET {{host}}/api/v1/accounts
+Authorization: Bearer {{token}}
+
+### Get account by id
+GET {{host}}/api/v1/accounts/{{accountId}}
+Authorization: Bearer {{token}}
+
+### Create account
+POST {{host}}/api/v1/accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Checking",
+  "bank": "Nubank"
+}
+
+### Update account
+PUT {{host}}/api/v1/accounts/{{accountId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Checking",
+  "bank": "Itaú"
+}
+
+### Delete account
+DELETE {{host}}/api/v1/accounts/{{accountId}}
+Authorization: Bearer {{token}}
+
+### List categories
+GET {{host}}/api/v1/categories?type=Expense
+Authorization: Bearer {{token}}
+
+### Get category by id
+GET {{host}}/api/v1/categories/{{categoryId}}
+Authorization: Bearer {{token}}
+
+### Create category
+POST {{host}}/api/v1/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Food",
+  "type": "Expense"
+}
+
+### Update category
+PUT {{host}}/api/v1/categories/{{categoryId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Groceries"
+}
+
+### Delete category
+DELETE {{host}}/api/v1/categories/{{categoryId}}
+Authorization: Bearer {{token}}
+
+### List transactions
+GET {{host}}/api/v1/transactions?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### Get transaction by id
+GET {{host}}/api/v1/transactions/{{transactionId}}
+Authorization: Bearer {{token}}
+
+### Create transaction
+POST {{host}}/api/v1/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "accountId": "{{accountId}}",
+  "categoryId": "{{categoryId}}",
+  "type": "Expense",
+  "amount": 50.00,
+  "description": "Lunch",
+  "transactionDate": "2026-10-30T12:00:00Z"
+}
+
+### Update transaction
+PUT {{host}}/api/v1/transactions/{{transactionId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "accountId": "{{accountId}}",
+  "categoryId": "{{categoryId}}",
+  "type": "Expense",
+  "amount": 80.00,
+  "description": "Lunch and coffee",
+  "transactionDate": "2026-10-30T12:00:00Z"
+}
+
+### Delete transaction
+DELETE {{host}}/api/v1/transactions/{{transactionId}}
+Authorization: Bearer {{token}}
+
+### List budgets
+GET {{host}}/api/v1/budgets
+Authorization: Bearer {{token}}
+
+### Get budget by id
+GET {{host}}/api/v1/budgets/{{budgetId}}
+Authorization: Bearer {{token}}
+
+### Get budget status
+GET {{host}}/api/v1/budgets/{{budgetId}}/status
+Authorization: Bearer {{token}}
+
+### Create budget
+POST {{host}}/api/v1/budgets
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "categoryId": "{{categoryId}}",
+  "limitAmount": 500.00,
+  "alertThreshold": 80,
+  "period": "Monthly",
+  "notes": "Groceries"
+}
+
+### Update budget
+PUT {{host}}/api/v1/budgets/{{budgetId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "categoryId": "{{categoryId}}",
+  "limitAmount": 600.00,
+  "alertThreshold": 75,
+  "period": "Monthly",
+  "notes": "Groceries"
+}
+
+### Delete budget
+DELETE {{host}}/api/v1/budgets/{{budgetId}}
+Authorization: Bearer {{token}}
+
+### List goals
+GET {{host}}/api/v1/goals
+Authorization: Bearer {{token}}
+
+### Get goal by id
+GET {{host}}/api/v1/goals/{{goalId}}
+Authorization: Bearer {{token}}
+
+### Create goal
+POST {{host}}/api/v1/goals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Emergency fund",
+  "description": "Three months of expenses",
+  "target": 10000.00,
+  "targetDate": "2027-12-31T00:00:00Z",
+  "monthlyContribution": 500.00,
+  "icon": "piggy-bank"
+}
+
+### Update goal
+PUT {{host}}/api/v1/goals/{{goalId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Emergency fund",
+  "description": "Six months of expenses",
+  "target": 15000.00,
+  "targetDate": "2027-12-31T00:00:00Z",
+  "monthlyContribution": 600.00,
+  "icon": "piggy-bank"
+}
+
+### Contribute to goal
+POST {{host}}/api/v1/goals/{{goalId}}/contributions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 200.00,
+  "fromAccountId": "{{accountId}}"
+}
+
+### Withdraw from goal
+POST {{host}}/api/v1/goals/{{goalId}}/withdrawals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 50.00
+}
+
+### Delete goal
+DELETE {{host}}/api/v1/goals/{{goalId}}
+Authorization: Bearer {{token}}
+
+### Report summary
+GET {{host}}/api/v1/reports/summary?from=2026-10-01T00:00:00Z&to=2026-10-31T23:59:59Z
+Authorization: Bearer {{token}}
+
+### Report by category
+GET {{host}}/api/v1/reports/by-category?from=2026-10-01T00:00:00Z&to=2026-10-31T23:59:59Z&type=Expense
+Authorization: Bearer {{token}}
+
+### Monthly report
+GET {{host}}/api/v1/reports/monthly?year=2026
+Authorization: Bearer {{token}}

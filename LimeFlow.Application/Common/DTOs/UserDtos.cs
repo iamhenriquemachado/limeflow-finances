@@ -1,9 +1,9 @@
-﻿namespace LimeFlow.Application.Common.DTOs
-{
-    public record UserDataResponseDto(Guid Id, string Email, string Password, string Name, DateTime CreatedAt);
+﻿namespace LimeFlow.Application.Common.DTOs;
 
-    public record UserResponseDto(Guid Id, string Email, string Name, DateTime CreatedAt);
-    public record CreateUserRequestDto(string Name, string Email, string Password);
-    public record CreatedUserResponseDto(Guid UserId, string Email);
-    public record UpdateUserRequestDto (string Name, string Password);
-}
+public record CreateUserRequest(string Name, string Email, string Password);
+
+public record UpdateUserRequest(string Name);
+
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+
+public record UserResponse(Guid Id, string Name, string Email, DateTime CreatedAt, DateTime UpdatedAt);

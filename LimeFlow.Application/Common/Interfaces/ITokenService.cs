@@ -1,10 +1,9 @@
-﻿using LimeFlow.Application.Common.DTOs;
+﻿using LimeFlow.Application.Common.Models;
+using LimeFlow.Domain.Entities;
 
+namespace LimeFlow.Application.Common.Interfaces;
 
-namespace LimeFlow.Application.Common.Interfaces
+public interface ITokenService
 {
-    public interface ITokenService
-    {
-        string GenerateToken(Guid userId, string name, string email);
-    }
+    AccessToken GenerateToken(User user);
 }

@@ -1,63 +1,91 @@
-﻿using LimeFlow.Application.Common.DTOs;
+﻿using LimeFlow.API.Infrastructure;
+using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace LimeFlow.API.Controllers
+namespace LimeFlow.API.Endpoints;
+
+public static class AccountEndpoints
 {
-    public static class AccountEndpoints
+    public static IEndpointRouteBuilder MapAccountEndpoints(this IEndpointRouteBuilder app)
     {
-        public static void MapAccountEndpoints(this IEndpointRouteBuilder app)
-        {
-            var group = app.MapGroup("/api/v1");
+        var group = app.MapGroup("/api/v1/accounts")
+            .WithTags("Accounts")
+            .RequireAuthorization()
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
 
-            group.MapGet("/accounts/{id:guid}", async (Guid id, ClaimsPrincipal user, IAccountService service) =>
-            {
-                var claim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        group.MapGet("/", GetAll)
+            .WithName("GetAccounts")
+            .WithSummary("List the authenticated user's accounts");
 
-                if (claim is null || !Guid.TryParse(claim, out var userId) || id != userId)
-                    return Results.NotFound();
+        group.MapGet("/{id:guid}", GetById)
+            .WithName("GetAccountById")
+            .WithSummary("Get an account by id")
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
-                var accounts = await service.GetAllAsync(userId);
-                return Results.Ok(accounts);
+        group.MapPost("/", Create)
+            .WithName("CreateAccount")
+            .WithSummary("Create an account (balance starts at 0)")
+            .WithValidation<CreateAccountRequest>();
 
-            }).WithName("GetAllUserAccounts")
-              .WithSummary("Get user account")
-              .WithDescription("Retrieves a collection of all financial accounts linked to a specific user ID.")
-              .WithTags("Accounts")
-              .Produces<IReadOnlyList<AccountSummaryResponseDto>>(StatusCodes.Status200OK)
-              .Produces(StatusCodes.Status404NotFound)
-              .RequireAuthorization();
+        group.MapPut("/{id:guid}", Update)
+            .WithName("UpdateAccount")
+            .WithSummary("Update an account's name and bank")
+            .WithDescription("The balance is never editable; it only changes through transactions.")
+            .WithValidation<UpdateAccountRequest>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
-            group.MapPost("/accounts/", async (Guid id, ClaimsPrincipal user, CreateAccountRequestDto request, IAccountService service) =>
-            {
-                var createAccount = await service.CreateAsync(request, id);
+        group.MapDelete("/{id:guid}", Delete)
+            .WithName("DeleteAccount")
+            .WithSummary("Delete an account")
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
-                var claim = user.FindFirst(ClaimTypes
-                    .NameIdentifier)?.Value;
+        return app;
+    }
 
-                if (claim is null || !Guid.TryParse(claim, out var userId) || id != userId)
-                    return Results.NotFound();
+    private static async Task<Ok<IReadOnlyList<AccountResponse>>> GetAll(
+        IAccountService accountService,
+        CancellationToken ct)
+    {
+        var accounts = await accountService.GetAllAsync(ct);
+        return TypedResults.Ok(accounts);
+    }
 
-                var accountCreatedResponse = new AccountCreatedResponseDto(createAccount.Id, createAccount.Name, createAccount.Bank, createAccount.CreatedAt);
-                return Results.Ok(new
-                {
+    private static async Task<Ok<AccountResponse>> GetById(
+        Guid id,
+        IAccountService accountService,
+        CancellationToken ct)
+    {
+        var account = await accountService.GetByIdAsync(id, ct);
+        return TypedResults.Ok(account);
+    }
 
-                    id = accountCreatedResponse.Id,
-                    name = accountCreatedResponse.Name,
-                    bank = accountCreatedResponse.Bank,
-                    createdAt = accountCreatedResponse.CreatedAt
+    private static async Task<Created<AccountResponse>> Create(
+        CreateAccountRequest request,
+        IAccountService accountService,
+        CancellationToken ct)
+    {
+        var account = await accountService.CreateAsync(request, ct);
+        return TypedResults.Created($"/api/v1/accounts/{account.Id}", account);
+    }
 
-                });
+    private static async Task<Ok<AccountResponse>> Update(
+        Guid id,
+        UpdateAccountRequest request,
+        IAccountService accountService,
+        CancellationToken ct)
+    {
+        var account = await accountService.UpdateAsync(id, request, ct);
+        return TypedResults.Ok(account);
+    }
 
-
-            }).WithName("CreateNewAccount")
-               .WithSummary("Create account")
-               .WithDescription("Create a New User Account.")
-               .WithTags("Accounts")
-               .Produces<AccountCreatedResponseDto>(StatusCodes.Status200OK)
-               .Produces(StatusCodes.Status401Unauthorized)
-               .RequireAuthorization();
-        }
+    private static async Task<NoContent> Delete(
+        Guid id,
+        IAccountService accountService,
+        CancellationToken ct)
+    {
+        await accountService.DeleteAsync(id, ct);
+        return TypedResults.NoContent();
     }
 }

@@ -1,75 +1,78 @@
 ﻿using LimeFlow.Application.Common.DTOs;
-using LimeFlow.Application.Common.Interfaces;
-using LimeFlow.Domain.Models;
 using LimeFlow.Application.Common.Exceptions;
+using LimeFlow.Application.Common.Interfaces;
+using LimeFlow.Application.Common.Mappings;
+using LimeFlow.Domain.Entities;
 
-namespace LimeFlow.Application.Services
+namespace LimeFlow.Application.Services;
+
+public class UserService : IUserService
 {
-    public class UserService : IUserService
+    private readonly IUserRepository _userRepository;
+    private readonly IPasswordHasher _passwordHasher;
+    private readonly ICurrentUserService _currentUser;
+    private readonly IUnitOfWork _unitOfWork;
+
+    public UserService(
+        IUserRepository userRepository,
+        IPasswordHasher passwordHasher,
+        ICurrentUserService currentUser,
+        IUnitOfWork unitOfWork)
     {
-        private readonly IUserRepository _repo;
-        private readonly IPasswordHasher _pass;
-
-
-        public UserService(IUserRepository repo, IPasswordHasher pass)
-        {
-            _repo = repo;
-            _pass = pass;
-        }
-
-        public async Task<IReadOnlyList<UserResponseDto>> GetUsersService()
-        {
-            var users = await _repo.GetAllAsync();
-            var userResponseDto = users.Select(u => new UserResponseDto(u.Id, u.Name, u.Email, u.CreatedAt)).ToList();
-
-            return userResponseDto;
-        }
-
-        public async Task<UserResponseDto> GetUserByIdService(Guid id)
-        {
-            var user = await _repo.GetByIdAsync(id);
-            var userResponseDto = new UserResponseDto(user.Id, user.Name, user.Email, user.CreatedAt);
-
-            return userResponseDto;
-        }
-
-        public async Task<UserResponseDto> CreateUserService(CreateUserRequestDto request)
-        {
-
-            var userData = await _repo.GetByEmailAsync(request.Email);
-
-            if (userData is not null)
-            {
-                throw new ConflictException("Email already registered.");
-            }
-
-            var encryptedPassword = _pass.PasswordHasher(request.Password);
-
-
-
-            User user = new User()
-            {
-                Id = Guid.NewGuid(),
-                Name = request.Name,
-                Email = request.Email,
-                Password = encryptedPassword,
-                CreatedAt = DateTime.UtcNow,
-                LastUpdatedAt = DateTime.UtcNow
-
-            };
-
-            await _repo.CreateAsync(user);
-
-            var userResponseDto = new UserResponseDto(user.Id, user.Name, user.Email, user.CreatedAt);
-
-            return userResponseDto;
-
-        }
-
-        public async Task DeleteUserService(Guid id)
-        {
-            await _repo.DeleteAsync(id);
-
-        }
+        _userRepository = userRepository;
+        _passwordHasher = passwordHasher;
+        _currentUser = currentUser;
+        _unitOfWork = unitOfWork;
     }
+
+    public async Task<UserResponse> CreateAsync(CreateUserRequest request, CancellationToken ct = default)
+    {
+        var email = User.NormalizeEmail(request.Email);
+
+        if (await _userRepository.EmailExistsAsync(email, ct))
+            throw new ConflictException("Email already registered.");
+
+        var user = new User(request.Name, email, _passwordHasher.Hash(request.Password));
+
+        _userRepository.Add(user);
+        await _unitOfWork.CommitAsync(ct);
+
+        return user.ToResponse();
+    }
+
+    public async Task<UserResponse> GetCurrentAsync(CancellationToken ct = default)
+    {
+        var user = await GetCurrentUserAsync(ct);
+        return user.ToResponse();
+    }
+
+    public Task<UserResponse> UpdateCurrentAsync(UpdateUserRequest request, CancellationToken ct = default)
+    {
+        // TODO(Phase 3):
+        // 1. Load the current user with GetCurrentUserAsync.
+        // 2. Call user.UpdateProfile(request.Name).
+        // 3. Commit with _unitOfWork and return user.ToResponse().
+        throw new NotImplementedException();
+    }
+
+    public Task ChangePasswordAsync(ChangePasswordRequest request, CancellationToken ct = default)
+    {
+        // TODO(Phase 3):
+        // 1. Load the current user with GetCurrentUserAsync.
+        // 2. If !_passwordHasher.Verify(request.CurrentPassword, user.PasswordHash) throw UnauthorizedException.
+        // 3. Call user.ChangePassword(_passwordHasher.Hash(request.NewPassword)) and commit.
+        throw new NotImplementedException();
+    }
+
+    public async Task DeleteCurrentAsync(CancellationToken ct = default)
+    {
+        var user = await GetCurrentUserAsync(ct);
+
+        _userRepository.Remove(user);
+        await _unitOfWork.CommitAsync(ct);
+    }
+
+    private async Task<User> GetCurrentUserAsync(CancellationToken ct) =>
+        await _userRepository.GetByIdAsync(_currentUser.UserId, ct)
+        ?? throw new NotFoundException(nameof(User), _currentUser.UserId);
 }

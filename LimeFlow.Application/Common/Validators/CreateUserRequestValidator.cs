@@ -1,20 +1,14 @@
 ﻿using FluentValidation;
 using LimeFlow.Application.Common.DTOs;
-using LimeFlow.Application.Common.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace LimeFlow.Application.Common.Validators
+namespace LimeFlow.Application.Common.Validators;
+
+public class CreateUserRequestValidator : AbstractValidator<CreateUserRequest>
 {
-    public class CreateUserRequestValidator : AbstractValidator<CreateUserRequestDto>
+    public CreateUserRequestValidator()
     {
-        public CreateUserRequestValidator()
-        {
-            RuleFor(x => x.Email).NotEmpty().Must(Functions.IsValidEmailAddress).WithMessage("Invalid email address");
-            RuleFor(x => x.Name).NotEmpty().Length(3, 100).WithMessage("Name cannot be null");
-        }
+        RuleFor(x => x.Name).NotEmpty().Length(3, 100);
+        RuleFor(x => x.Email).ValidEmail();
+        RuleFor(x => x.Password).StrongPassword();
     }
 }

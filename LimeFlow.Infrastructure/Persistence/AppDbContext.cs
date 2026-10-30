@@ -1,25 +1,21 @@
-﻿using LimeFlow.Domain.Models;
+﻿using LimeFlow.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection;
-using System.Reflection.Emit;
 
-namespace LimeFlow.Infrastructure.Database
+namespace LimeFlow.Infrastructure.Persistence;
+
+public class AppDbContext : DbContext
 {
-    public class AppDbContext : DbContext
-    {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-        {
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        }
-        public DbSet<User> Users { get; set; }
-        public DbSet<Account> Accounts { get; set; }
-        public DbSet<Budget> Budgets { get; set; }
-        public DbSet<Category> Categories { get; set; }
-        public DbSet<Goal> Goals { get; set; }
-        public DbSet<Transaction> Transactions { get; set; }
-        protected override void OnModelCreating(ModelBuilder modeBuilder)
-        {
-            modeBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
-        }
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<Budget> Budgets => Set<Budget>();
+    public DbSet<Goal> Goals => Set<Goal>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }

@@ -1,39 +1,33 @@
 ﻿using LimeFlow.Application.Common.DTOs;
+using LimeFlow.Application.Common.Exceptions;
 using LimeFlow.Application.Common.Interfaces;
+using LimeFlow.Domain.Entities;
 
-namespace LimeFlow.Application.Services
+namespace LimeFlow.Application.Services;
+
+public class AuthService : IAuthService
 {
-    public class AuthService : IAuthService
+    private const string TokenType = "Bearer";
+
+    private readonly IUserRepository _userRepository;
+    private readonly IPasswordHasher _passwordHasher;
+    private readonly ITokenService _tokenService;
+
+    public AuthService(IUserRepository userRepository, IPasswordHasher passwordHasher, ITokenService tokenService)
     {
-        private readonly IUserRepository _repo;
-        private readonly IPasswordVerifier _verifier;
-        private readonly ITokenService _tokenService;
+        _userRepository = userRepository;
+        _passwordHasher = passwordHasher;
+        _tokenService = tokenService;
+    }
 
-        public AuthService(IUserRepository repo, IPasswordVerifier verifier, ITokenService tokenService)
-        {
-            _repo = repo;
-            _verifier = verifier;
-            _tokenService = tokenService;
-        }
+    public async Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken ct = default)
+    {
+        var user = await _userRepository.GetByEmailAsync(User.NormalizeEmail(request.Email), ct);
 
-        public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request, CancellationToken ct)
-        {
-            var userData = await _repo.GetByEmailAsync(request.email);
+        if (user is null || !_passwordHasher.Verify(request.Password, user.PasswordHash))
+            throw new UnauthorizedException("Invalid email or password.");
 
-            if (userData is null)
-            {
-                return null;
-            }
-
-            var isValid = await _verifier.VerifyPassword(request.password, userData.Password);
-
-            if (!isValid)
-            {
-                return null;
-            }
-
-            var token = _tokenService.GenerateToken(userData.Id, userData.Name, userData.Email);
-            return new LoginResponseDto(token, "Bearer", 3600);
-        }
+        var token = _tokenService.GenerateToken(user);
+        return new LoginResponse(token.Value, TokenType, token.ExpiresInSeconds);
     }
 }

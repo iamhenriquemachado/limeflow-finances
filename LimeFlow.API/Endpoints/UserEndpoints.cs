@@ -1,102 +1,86 @@
-﻿using LimeFlow.Application.Common.DTOs;
+﻿using LimeFlow.API.Infrastructure;
+using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
-using LimeFlow.Domain.Models;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Http.HttpResults;
 
+namespace LimeFlow.API.Endpoints;
 
-namespace LimeFlow.API.Controllers
+public static class UserEndpoints
 {
-    public static class UserEndpoints
+    public static IEndpointRouteBuilder MapUserEndpoints(this IEndpointRouteBuilder app)
     {
-
-        public static void MapUserEndpoints(this IEndpointRouteBuilder app)
-        {
-            var group = app.MapGroup("/api/v1");
-
-            group.MapGet("/users", async (IUserService service, ClaimsPrincipal user) =>
-            {
-                var claims = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                var users = await service.GetUsersService();
-                return Results.Ok(users);
-
-            }).WithName("GetUsers")
-            .WithSummary("List all registered users")
-            .WithDescription("Retrieves a paginated list of all users available in the system. Requires administrative privileges.")
+        var group = app.MapGroup("/api/v1/users")
             .WithTags("Users")
-            .Produces<List<UserResponseDto>>(StatusCodes.Status200OK, "application/json")
-            .Produces(StatusCodes.Status401Unauthorized, typeof(void), "application/json")
-            .Produces<HttpValidationProblemDetails>(StatusCodes.Status500InternalServerError, "application/problem+json")
-            .RequireAuthorization();
+            .RequireAuthorization()
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
 
+        group.MapPost("/", Create)
+            .AllowAnonymous()
+            .WithName("CreateUser")
+            .WithSummary("Register a new user")
+            .WithValidation<CreateUserRequest>()
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
-            group.MapGet("/users/{id:guid}", async (Guid id, IUserService service) =>
-            {
-                var user = await service.GetUserByIdService(id);
-                return Results.Ok(user);
+        group.MapGet("/me", GetCurrent)
+            .WithName("GetCurrentUser")
+            .WithSummary("Get the authenticated user's profile")
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
-            }).WithName("GetUserById")
-              .WithSummary("Get user by Id")
-              .WithDescription("Return a user.")
-              .WithTags("Users")
-              .Produces<UserResponseDto>(StatusCodes.Status200OK)
-              .Produces<UserResponseDto>(StatusCodes.Status404NotFound);
+        group.MapPut("/me", UpdateCurrent)
+            .WithName("UpdateCurrentUser")
+            .WithSummary("Update the authenticated user's profile")
+            .WithValidation<UpdateUserRequest>()
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
-            group.MapGet("/users/me", async (ClaimsPrincipal user, IUserService service) =>
-            {
-                Guid userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-                var userData = await service.GetUserByIdService(userId);
+        group.MapPatch("/me/password", ChangePassword)
+            .WithName("ChangeCurrentUserPassword")
+            .WithSummary("Change the authenticated user's password")
+            .WithValidation<ChangePasswordRequest>();
 
-                return Results.Ok(userData);
-            }).WithName("Return user data")
-            .WithSummary("Get user data")
-            .WithDescription("Retrieves the profile data of the authenticated user based on their unique identifier (GUID).")
-            .WithTags("Users")
-            .Produces(StatusCodes.Status200OK)
-            .RequireAuthorization();
+        group.MapDelete("/me", DeleteCurrent)
+            .WithName("DeleteCurrentUser")
+            .WithSummary("Delete the authenticated user and all their data")
+            .ProducesProblem(StatusCodes.Status404NotFound);
 
+        return app;
+    }
 
-            group.MapPost("/users", async ([FromBody] CreateUserRequestDto request, IUserService service) =>
-            {
-                var user = await service.CreateUserService(request);
-                return Results.Created($"api/v1/users/{user.Id}", user);
+    private static async Task<Created<UserResponse>> Create(
+        CreateUserRequest request,
+        IUserService userService,
+        CancellationToken ct)
+    {
+        var user = await userService.CreateAsync(request, ct);
+        return TypedResults.Created("/api/v1/users/me", user);
+    }
 
+    private static async Task<Ok<UserResponse>> GetCurrent(IUserService userService, CancellationToken ct)
+    {
+        var user = await userService.GetCurrentAsync(ct);
+        return TypedResults.Ok(user);
+    }
 
-            }).WithName("CreateUser")
-            .WithSummary("Create a new user")
-            .WithDescription("Creates a new user and returns it with a 201 Created status and Location Header.")
-            .WithTags("Users")
-            .Produces<UserResponseDto>(StatusCodes.Status201Created)
-            .Produces<HttpValidationProblemDetails>(StatusCodes.Status400BadRequest)
-            .Produces<HttpValidationProblemDetails>(StatusCodes.Status409Conflict);
+    private static async Task<Ok<UserResponse>> UpdateCurrent(
+        UpdateUserRequest request,
+        IUserService userService,
+        CancellationToken ct)
+    {
+        var user = await userService.UpdateCurrentAsync(request, ct);
+        return TypedResults.Ok(user);
+    }
 
-            group.MapPut("/users", async ([FromBody] UpdateUserRequestDto request, IUserService service) =>
-            {
-                
-            });
+    private static async Task<NoContent> ChangePassword(
+        ChangePasswordRequest request,
+        IUserService userService,
+        CancellationToken ct)
+    {
+        await userService.ChangePasswordAsync(request, ct);
+        return TypedResults.NoContent();
+    }
 
-            group.MapDelete("/users/{id:guid}", async (Guid id, ClaimsPrincipal user, IUserService service) =>
-            {
-                var claim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-                if (claim is null || !Guid.TryParse(claim, out var userId) || id != userId)
-                    return Results.NotFound();
-
-                await service.DeleteUserService(id);
-                return Results.NoContent();
-
-
-            }).WithName("DeleteUser")
-              .WithSummary("Delete a user by Id")
-              .WithDescription("Deletes a user and returns a 204 NoContent status response.")
-              .WithTags("Users")
-              .Produces(StatusCodes.Status204NoContent)
-              .Produces(StatusCodes.Status404NotFound)
-              .RequireAuthorization();
-
-
-        }
-
-
+    private static async Task<NoContent> DeleteCurrent(IUserService userService, CancellationToken ct)
+    {
+        await userService.DeleteCurrentAsync(ct);
+        return TypedResults.NoContent();
     }
 }

@@ -1,59 +1,55 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using LimeFlow.Domain.Exceptions;
 
-namespace LimeFlow.Domain.Models
+namespace LimeFlow.Domain.Entities;
+
+public class Account
 {
-    public class Account
+    public Guid Id { get; private set; }
+    public Guid UserId { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public string Bank { get; private set; } = string.Empty;
+    public decimal Balance { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime UpdatedAt { get; private set; }
+
+    private Account() { }
+
+    public Account(string name, string bank, Guid userId)
     {
-        public Guid Id { get; private set; }
-        public string Name { get; private set; }
-        public string Bank { get; private set; }
-        public decimal Balance { get; private set; }
-        public DateTime CreatedAt { get; init; }
-        public DateTime UpdatedAt { get; private set; }
-        public Guid UserId { get; private set; }
+        Id = Guid.NewGuid();
+        UserId = userId;
+        Name = name.Trim();
+        Bank = bank.Trim();
+        Balance = 0m;
+        CreatedAt = DateTime.UtcNow;
+        UpdatedAt = CreatedAt;
+    }
 
-        public Account(string name, string bank, Guid userId)
-        {
-            var guid = Guid.NewGuid();
+    public void AddCredit(decimal amount)
+    {
+        EnsurePositive(amount);
+        Balance += amount;
+        UpdatedAt = DateTime.UtcNow;
+    }
 
-            Id = guid;
-            Name = name;
-            Bank = bank;
-            Balance = 0.0m;
-            CreatedAt = DateTime.UtcNow;
-            UpdatedAt = DateTime.UtcNow;
-            UserId = userId;
+    public void Debit(decimal amount)
+    {
+        EnsurePositive(amount);
+        if (amount > Balance) throw new DomainException("Insufficient funds.");
 
-        }
+        Balance -= amount;
+        UpdatedAt = DateTime.UtcNow;
+    }
 
+    public void Rename(string name, string bank)
+    {
+        Name = name.Trim();
+        Bank = bank.Trim();
+        UpdatedAt = DateTime.UtcNow;
+    }
 
-        public void AddCredit(decimal amount)
-        {
-            if (amount <= 0) throw new ArgumentException("Value must be greater than zero.");
-            this.Balance += amount;
-        }
-
-        public void Debit(decimal amount)
-        {
-            if (amount > Balance) throw new ArgumentException("Insufficient funds.");
-            this.Balance -= amount;
-        }
-
-        public void UpdateName(string name)
-        {
-            Name = name;
-        }
-
-        public void UpdateBank(string bank)
-        {
-            Bank = bank;
-        }
-
-
-
+    private static void EnsurePositive(decimal amount)
+    {
+        if (amount <= 0) throw new DomainException("Amount must be greater than zero.");
     }
 }

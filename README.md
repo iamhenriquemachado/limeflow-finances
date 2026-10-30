@@ -10,14 +10,15 @@ This README is both the **requirements specification** and the **implementation 
 
 1. [Getting started](#1-getting-started)
 2. [Architecture](#2-architecture)
-3. [Current state](#3-current-state)
-4. [Known bugs and required fixes](#4-known-bugs-and-required-fixes)
-5. [API conventions](#5-api-conventions)
-6. [Domain requirements](#6-domain-requirements)
-7. [Endpoint catalog](#7-endpoint-catalog)
-8. [Roadmap](#8-roadmap)
-9. [Testing requirements](#9-testing-requirements)
-10. [Definition of done](#10-definition-of-done)
+3. [Code conventions](#3-code-conventions)
+4. [Current state](#4-current-state)
+5. [Known bugs and required fixes](#5-known-bugs-and-required-fixes)
+6. [API conventions](#6-api-conventions)
+7. [Domain requirements](#7-domain-requirements)
+8. [Endpoint catalog](#8-endpoint-catalog)
+9. [Roadmap](#9-roadmap)
+10. [Testing requirements](#10-testing-requirements)
+11. [Definition of done](#11-definition-of-done)
 
 ---
 
@@ -89,13 +90,15 @@ LimeFlow.Domain/
   Exceptions/          DomainException
 LimeFlow.Application/
   Common/DTOs/         one file per feature (AccountDtos.cs, TransactionDtos.cs, ...)
-  Common/Exceptions/   NotFoundException, ConflictException, ForbiddenException
+  Common/Exceptions/   NotFoundException, ConflictException, ForbiddenException, UnauthorizedException
   Common/Interfaces/   I*Repository, IUnitOfWork, ICurrentUserService, ITokenService, ...
+  Common/Mappings/     entity -> response extensions
+  Common/Models/       PagedRequest, PagedResponse, AccessToken
   Common/Validators/   one validator per request DTO
   Services/            AccountService, TransactionService, ...
   DependencyInjection.cs   AddApplication()
 LimeFlow.Infrastructure/
-  Persistence/         AppDbContext, UnitOfWork, Configurations/
+  Persistence/         AppDbContext, AppDbContextFactory, UnitOfWork, Configurations/
   Repositories/
   Auth/                TokenService, BCryptPasswordHasher, JwtSettings
   Migrations/
@@ -109,70 +112,102 @@ LimeFlow.Tests/        unit tests (xUnit + Moq + FluentAssertions)
 
 ---
 
-## 3. Current state
+## 3. Code conventions
 
-| Area | Status |
-| --- | --- |
-| Register user, login (JWT) | Implemented |
-| Get / delete user | Implemented, has security issues (see S1, S2) |
-| Accounts create / list | Implemented but broken (see B1-B6) |
-| Categories, Transactions, Budgets, Goals, Reports | Entity only, no endpoints |
-| Unit of Work | Missing |
-| Validation | Validator exists but is never executed |
-| Error handling | Partial (409 returns empty body) |
-| Tests | Missing |
+These rules apply to every new file. Follow them so the codebase stays consistent as you fill in the skeletons.
+
+- **Language of the code:** English. TODO comments are also in English and cite the README item (for example `// TODO(Phase 5): ...`).
+- **Namespaces:** file-scoped (`namespace X;`), matching the folder path. Drop unused `using`s (`ImplicitUsings` is on).
+- **DTOs:** one file per feature (`Common/DTOs/AccountDtos.cs`), `record`s with PascalCase properties. JSON stays camelCase (ASP.NET default).
+  - Input: `{Verb}{Entity}Request` — `CreateAccountRequest`, `UpdateAccountRequest`.
+  - Output: `{Entity}Response` — `AccountResponse`.
+  - No `Dto` suffix; the namespace already identifies the type.
+- **Interfaces and classes:** `I{Entity}Repository` / `{Entity}Repository` and `I{Entity}Service` / `{Entity}Service`.
+- **Service methods:** `GetAllAsync`, `GetByIdAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`, always with `CancellationToken ct = default`.
+- **Repository methods:**
+  - Reads: `GetByIdAsync(Guid id, Guid userId, ct)` and `GetAllAsync(Guid userId, ct)` return the entity (nullable), never a DTO.
+  - Writes: `Add(entity)` and `Remove(entity)`.
+  - Persistence happens only in `IUnitOfWork.CommitAsync(ct)`.
+- **Private fields:** `_camelCase` with a descriptive name (`_accountRepository`, `_passwordHasher`).
+- **Endpoints:**
+  - One file per resource, `Map{Resource}Endpoints`.
+  - `MapGroup("/api/v1/{resource}")` with `.WithTags` and `.RequireAuthorization()` on the group.
+  - Handlers as named `private static` methods returning `TypedResults`.
+  - Route names `{Verb}{Entity}` — `GetAccounts`, `GetAccountById`, `CreateAccount`.
+- **Errors:** services throw `NotFoundException`, `ConflictException`, `UnauthorizedException` or `DomainException` and never return `null`. `GlobalExceptionHandler` maps them to ProblemDetails.
+- **Current user:** services take `ICurrentUserService`. Endpoints do not parse claims.
+
+Request flow:
+
+```mermaid
+flowchart LR
+    Endpoint --> ValidationFilter
+    ValidationFilter --> Service
+    Service --> CurrentUser["ICurrentUserService"]
+    Service --> Repository
+    Service --> UnitOfWork
+    Service -->|throws| GlobalExceptionHandler
+```
 
 ---
 
-## 4. Known bugs and required fixes
+## 4. Current state
+
+| Area | Status |
+| --- | --- |
+| Register, login (JWT), `/users/me` | Implemented |
+| Accounts CRUD | Implemented (delete rule for accounts with transactions is still a TODO) |
+| Categories, Transactions, Budgets, Goals, Reports | **Skeletons** — endpoints, DTOs, validators, interfaces and DI are wired. Services and repositories throw `NotImplementedException` (HTTP 501) until you fill in the `TODO` comments. |
+| Unit of Work, validation filter, exception handler | Implemented |
+| Tests | Missing |
+
+`PUT /users/me` and `PATCH /users/me/password` are also skeletons (`UserService` still has TODOs).
+
+---
+
+## 5. Known bugs and required fixes
 
 ### Critical (crashes or wrong behavior)
 
-- ✅ **B1** `LimeFlow.API/Controllers/AccountEndpoints.cs` - route `/accounts/{guid:id}` uses invalid constraint syntax (should be `{id:guid}`). Listing "my accounts" must not take a user id at all; use `GET /api/v1/accounts` and read the user from the JWT.
-- ✅ **B2** `AccountService` has no constructor, so `_repo` is always `null` and every call throws `NullReferenceException`.
-- ✅ **B3** `IAccountRepository` is not registered in DI (`Program.cs`).
-- [ ] **B4** `AccountService.CreateAsync` calls `new Account(request.Id, request.Name, request.Bank)` but the constructor is `(name, bank, userId)`. Remove `Id` from `CreateAccountRequestDto`; the user id comes from the token.
-- [ ] **B5** `AccountRepository.GetAllAsync` filters `a.Id == userId`; must be `a.UserId == userId`.
-- [ ] **B6** `AccountConfiguration` does not implement `IEntityTypeConfiguration<Account>`, so EF never applies it (no FK Accounts -> Users in the migration snapshot).
-- [ ] **B7** Foreign key type mismatches: `Account.UserId` and `Goal.UserId` are `string`, `Budget.CategoryId` is `int`, while all primary keys are `Guid`. Change to `Guid` and add a migration.
-- [ ] **B8** `ValidationExceptionMiddleware` - the `ConflictException` branch builds `problemDetails` but never writes it to the response.
-- [ ] **B9** Validators are never registered or executed, so `ValidationException` is never thrown. `CreateUserRequestValidator` also does not validate the password.
-- [ ] **B10** `AccountService.UpdateAsync` uses `account` before the null check.
-- [ ] **B11** `Account.Debit` does not reject `amount <= 0`.
+- [x] **B1** Invalid account list route. Now `GET /api/v1/accounts`, user id from the JWT.
+- [x] **B2** `AccountService` constructor injects `IAccountRepository`.
+- [x] **B3** `IAccountRepository` registered in `AddInfrastructure`.
+- [x] **B4** `CreateAccountRequest` has no `Id`; user id comes from `ICurrentUserService`.
+- [x] **B5** `AccountRepository.GetAllAsync` filters `a.UserId == userId`.
+- [x] **B6** `AccountConfiguration` implements `IEntityTypeConfiguration<Account>` with the User FK.
+- [x] **B7** `Account.UserId`, `Goal.UserId` and `Budget.CategoryId` are `Guid`. Migration: `StandardizeNamingAndKeys`.
+- [x] **B8** Custom middleware replaced by `GlobalExceptionHandler`, which writes the 409 body.
+- [x] **B9** Validators registered via `AddValidatorsFromAssembly` and run by `ValidationFilter<T>`. Password is validated.
+- [x] **B10** `AccountService.UpdateAsync` loads the owned account (or 404) before mutating it.
+- [x] **B11** `Account.Debit` rejects `amount <= 0`.
 
 ### Security
 
-- [ ] **S1** `GET /api/v1/users` returns every user to any authenticated user. Remove it or restrict to an `Admin` policy.
-- [ ] **S2** `GET /api/v1/users/{id}` has no authorization and returns 500 when the user does not exist. Replace with `GET /users/me`.
-- [ ] **S3** No unique index on `Users.Email` and emails are not normalized. Add a unique index and store emails trimmed and lowercased.
-- [ ] **S4** `Program.cs` reads `JwtSettings:SecretKey` without a null check. Fail fast at startup when it is missing; keep secrets in User Secrets / environment variables.
+- [x] **S1** `GET /api/v1/users` removed.
+- [x] **S2** Replaced by `GET /users/me` (authorized). Missing user throws `NotFoundException` (404).
+- [x] **S3** Unique index on `Users.Email`. Emails are trimmed and lowercased in `User.NormalizeEmail`.
+- [x] **S4** `AddInfrastructure` fails fast when `SecretKey` is shorter than 32 characters or the connection string is missing.
 - [ ] **S5** Rate-limit `POST /sessions` (built-in `AddRateLimiter`) to slow down brute-force attempts.
 
 ### Design and code quality
 
-- [ ] **I1** Add `IUnitOfWork.CommitAsync(ct)`. Repositories stop calling `SaveChangesAsync`. Replace `ExecuteDeleteAsync` with `Remove(entity)` so deletes participate in the unit of work.
-- [ ] **I2** Repositories return domain entities, never DTOs (`IUserRepository.GetByEmailAsync` currently returns `UserDataResponseDto`).
-- [ ] **I3** Declare nullable returns honestly (`Task<Account?>`). Services throw `NotFoundException` instead of returning `null`.
-- [ ] **I4** Replace the custom middleware with an `IExceptionHandler` and call `app.UseExceptionHandler()` **first** in the pipeline (it is currently after auth).
-- [ ] **I5** Add `ICurrentUserService` (implemented in API via `IHttpContextAccessor`) exposing `Guid UserId`, instead of parsing claims in every endpoint.
-- [ ] **I6** Enforce ownership in services: every query filters by `UserId`; accessing another user's resource returns 404.
-- [ ] **I7** Rich domain models: private setters, constructors that enforce invariants, behavior methods. `User`, `Transaction`, `Category`, `Budget` and `Goal` are currently anemic.
-- [ ] **I8** Configure every money `decimal` with `HasPrecision(18, 2)`.
-- [ ] **I9** Propagate `CancellationToken` through endpoints, services and repositories.
-- [ ] **I10** Per-layer DI extension methods `AddApplication()` and `AddInfrastructure(configuration)` to keep `Program.cs` small.
-- [ ] **I11** Move `JwtSettings` out of Domain into Infrastructure. Add `ExpirationMinutes` and use it for both the token expiry and `expiresIn` (3600 is hardcoded in two places).
-- [ ] **I12** Endpoints return response DTOs directly instead of rebuilding anonymous objects.
-- [ ] **I13** Housekeeping:
-  - Rename the `Controllers` folder to `Endpoints` (they are Minimal APIs).
-  - Align the `Persistence` folder with the `LimeFlow.Infrastructure.Database` namespace.
-  - Remove the unused `MediatR` package and the duplicate `BCrypt` 1.0.0 package.
-  - Remove `BCrypt.Net-Next` and `JwtBearer` from the Application project (Application must not depend on them).
-  - Rename service methods (`GetUsersService` -> `GetAllAsync`, etc.), use PascalCase in record properties (`email` -> `Email`).
-  - Fix typos: `AlertTreshold` -> `AlertThreshold`, `modeBuilder` -> `modelBuilder`, `ocurred` -> `occurred`.
+- [x] **I1** `IUnitOfWork.CommitAsync(ct)`. Repositories use `Add` / `Remove`; they do not call `SaveChangesAsync`.
+- [x] **I2** Repositories return domain entities (`User?`, not DTOs).
+- [x] **I3** Nullable returns (`Task<Account?>`). Services throw `NotFoundException`.
+- [x] **I4** `GlobalExceptionHandler : IExceptionHandler`. `app.UseExceptionHandler()` is the first middleware.
+- [x] **I5** `ICurrentUserService` / `CurrentUserService`.
+- [x] **I6** Ownership: account queries filter by `UserId`. Apply the same pattern when filling in the other services.
+- [x] **I7** Rich models with private setters. `User` and `Account` enforce invariants; `Category`, `Transaction`, `Budget` and `Goal` have constructors and TODOs for the remaining rules.
+- [x] **I8** Money columns use `HasPrecision(18, 2)`.
+- [x] **I9** `CancellationToken` on endpoints, services and repository signatures.
+- [x] **I10** `AddApplication()`, `AddInfrastructure(configuration)`, `AddPresentation()`.
+- [x] **I11** `JwtSettings` lives in Infrastructure, with `ExpirationMinutes` driving both the token and `expiresIn`.
+- [x] **I12** Endpoints return response records via `TypedResults`.
+- [x] **I13** Housekeeping done: `Endpoints` folder, `LimeFlow.Infrastructure.Persistence` namespace, unused packages removed, PascalCase DTO properties, `AlertThreshold` spelling.
 
 ---
 
-## 5. API conventions
+## 6. API conventions
 
 These rules apply to every endpoint.
 
@@ -196,6 +231,7 @@ These rules apply to every endpoint.
 | 409 Conflict | Duplicate or resource in use (`ConflictException`) |
 | 422 Unprocessable Entity | Domain rule violated (`DomainException`, e.g. insufficient funds) |
 | 500 Internal Server Error | Unhandled exception (logged, no details leaked) |
+| 501 Not Implemented | Skeleton endpoint whose service still throws `NotImplementedException` |
 
 ### Pagination
 
@@ -207,7 +243,7 @@ List endpoints that can grow (transactions) accept `?page=1&pageSize=20` (max 10
 
 ---
 
-## 6. Domain requirements
+## 7. Domain requirements
 
 ### User
 
@@ -219,7 +255,7 @@ List endpoints that can grow (transactions) accept `?page=1&pageSize=20` (max 10
 - Fields: `Id`, `UserId: Guid`, `Name`, `Bank`, `Balance`, `CreatedAt`, `UpdatedAt`.
 - `Balance` starts at `0` and has a `private set`. It only changes through `AddCredit(amount)` and `Debit(amount)`.
 - Both methods throw when `amount <= 0`.
-- Overdraft rule (choose one and document it): `Debit` rejects `amount > Balance` (current behavior), **or** negative balances are allowed.
+- Overdraft rule (chosen): `Debit` rejects `amount > Balance` with `DomainException("Insufficient funds.")`. Negative balances are not allowed.
 - `Rename(name, bank)` updates `UpdatedAt`.
 
 ### Category
@@ -251,7 +287,7 @@ Add a `DomainException` for rule violations so the API can map it to 422. If you
 
 ---
 
-## 7. Endpoint catalog
+## 8. Endpoint catalog
 
 ### Auth
 
@@ -391,36 +427,36 @@ Implement reports as read-only queries: `AsNoTracking()`, projections and `Group
 
 ---
 
-## 8. Roadmap
+## 9. Roadmap
 
 Each phase must leave the solution building and running. Commit at the end of each phase.
 
 ### Phase 0 - Bug fixes
 
-- [ ] Fix B1 to B11
-- [ ] Fix S1 to S4
+- [x] Fix B1 to B11
+- [x] Fix S1 to S4
 
 ### Phase 1 - Foundations
 
-- [ ] `IUnitOfWork` + `UnitOfWork` (`CommitAsync` returns `await _context.SaveChangesAsync(ct) > 0`)
-- [ ] Exceptions: `NotFoundException`, `ConflictException`, `ForbiddenException`, `DomainException`
-- [ ] `GlobalExceptionHandler : IExceptionHandler` mapping exceptions to the status table in section 5
-- [ ] `ICurrentUserService` + `CurrentUserService`
-- [ ] FluentValidation: `AddValidatorsFromAssembly(...)` + an endpoint filter that validates the request DTO
-- [ ] `AddApplication()` / `AddInfrastructure(configuration)` extension methods
-- [ ] `CancellationToken` everywhere (I9), `JwtSettings.ExpirationMinutes` (I11)
+- [x] `IUnitOfWork` + `UnitOfWork` (`CommitAsync` returns `await _context.SaveChangesAsync(ct) > 0`)
+- [x] Exceptions: `NotFoundException`, `ConflictException`, `ForbiddenException`, `DomainException`
+- [x] `GlobalExceptionHandler : IExceptionHandler` mapping exceptions to the status table in section 6
+- [x] `ICurrentUserService` + `CurrentUserService`
+- [x] FluentValidation: `AddValidatorsFromAssembly(...)` + an endpoint filter that validates the request DTO
+- [x] `AddApplication()` / `AddInfrastructure(configuration)` extension methods
+- [x] `CancellationToken` everywhere (I9), `JwtSettings.ExpirationMinutes` (I11)
 
 ### Phase 2 - Domain and persistence
 
-- [ ] Apply the domain rules from section 6 (I7)
-- [ ] `IEntityTypeConfiguration<T>` for every entity: keys, FKs with delete behavior, max lengths, `HasPrecision(18, 2)`, enums
-- [ ] Indexes: unique `Users.Email`, unique `Categories(UserId, Name)`, `Transactions(AccountId, TransactionDate)`, `Transactions(CategoryId)`, unique `Budgets(CategoryId, Period)`
-- [ ] New migration (e.g. `FixKeysAndRelations`)
+- [x] Apply the domain rules from section 7 for `User` and `Account` (I7). Remaining entities have constructors and TODOs for the extra invariants.
+- [x] `IEntityTypeConfiguration<T>` for every entity: keys, FKs with delete behavior, max lengths, `HasPrecision(18, 2)`, enums
+- [x] Indexes: unique `Users.Email`, unique `Categories(UserId, Name)`, `Transactions(AccountId, TransactionDate)`, `Transactions(CategoryId)`, unique `Budgets(CategoryId, Period)`
+- [x] Migration `StandardizeNamingAndKeys`. If `Accounts.UserId` / `Goals.UserId` contain non-uuid strings, recreate the dev database or adjust the `USING "UserId"::uuid` clause. `Budgets.CategoryId` is dropped and recreated as `uuid` (integer values cannot be cast).
 
 ### Phase 3 - Users and Accounts
 
-- [ ] Users endpoints from section 7
-- [ ] Accounts CRUD from section 7
+- [x] Users endpoints from section 8 (`POST /users`, `/users/me`). Fill in `UpdateCurrentAsync` and `ChangePasswordAsync`.
+- [x] Accounts CRUD from section 8. Decide and document the delete-with-transactions rule.
 
 ### Phase 4 - Categories
 
@@ -448,7 +484,7 @@ Each phase must leave the solution building and running. Commit at the end of ea
 
 ### Phase 9 - Tests
 
-- [ ] Create `LimeFlow.Tests` and cover section 9 (start in Phase 2 and grow it every phase)
+- [ ] Create `LimeFlow.Tests` and cover section 10 (start in Phase 2 and grow it every phase)
 
 ### Phase 10 - Production readiness
 
@@ -462,7 +498,7 @@ Each phase must leave the solution building and running. Commit at the end of ea
 
 ---
 
-## 9. Testing requirements
+## 10. Testing requirements
 
 Projects:
 
@@ -492,7 +528,7 @@ Projects:
 
 ---
 
-## 10. Definition of done
+## 11. Definition of done
 
 An endpoint is done when it has:
 

@@ -1,24 +1,25 @@
-﻿using LimeFlow.Domain.Models;
+﻿using LimeFlow.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace LimeFlow.Infrastructure.Persistence.Configurations
+namespace LimeFlow.Infrastructure.Persistence.Configurations;
+
+internal class AccountConfiguration : IEntityTypeConfiguration<Account>
 {
-    internal class AccountConfiguration
+    public void Configure(EntityTypeBuilder<Account> builder)
     {
-        public void Configure(EntityTypeBuilder<Account> builder)
-        {
-            builder.HasKey(a => a.Id);
+        builder.ToTable("Accounts");
+        builder.HasKey(a => a.Id);
 
-            builder.HasOne<User>()
-                   .WithMany()
-                   .HasForeignKey(a => a.UserId)
-                   .OnDelete(DeleteBehavior.Cascade);
-        }
+        builder.Property(a => a.Name).HasMaxLength(100).IsRequired();
+        builder.Property(a => a.Bank).HasMaxLength(100).IsRequired();
+        builder.Property(a => a.Balance).HasPrecision(ColumnTypes.MoneyPrecision, ColumnTypes.MoneyScale);
+        builder.Property(a => a.CreatedAt).IsRequired();
+        builder.Property(a => a.UpdatedAt).IsRequired();
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(a => a.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

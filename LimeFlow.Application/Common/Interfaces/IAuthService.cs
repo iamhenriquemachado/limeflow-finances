@@ -1,10 +1,8 @@
 ﻿using LimeFlow.Application.Common.DTOs;
 
+namespace LimeFlow.Application.Common.Interfaces;
 
-namespace LimeFlow.Application.Common.Interfaces
+public interface IAuthService
 {
-    public interface IAuthService
-    {
-        Task<LoginResponseDto?> LoginAsync(LoginRequestDto request, CancellationToken ct);
-    }
+    Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken ct = default);
 }
