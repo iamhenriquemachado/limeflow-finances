@@ -16,5 +16,6 @@ namespace LimeFlow.Domain.Models
         public string Notes { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public Guid UserId { get; set; }
     }
 }
