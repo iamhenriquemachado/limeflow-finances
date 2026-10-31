@@ -46,22 +46,23 @@ public class UserService : IUserService
         return user.ToResponse();
     }
 
-    public Task<UserResponse> UpdateCurrentAsync(UpdateUserRequest request, CancellationToken ct = default)
+    public async Task<UserResponse> UpdateCurrentAsync(UpdateUserRequest request, CancellationToken ct = default)
     {
-        // TODO(Phase 3):
-        // 1. Load the current user with GetCurrentUserAsync.
-        // 2. Call user.UpdateProfile(request.Name).
-        // 3. Commit with _unitOfWork and return user.ToResponse().
-        throw new NotImplementedException();
+        var user = await GetCurrentUserAsync(ct);
+        user.UpdateProfile(request.Name);
+        await _unitOfWork.CommitAsync(ct);
+        return user.ToResponse();
     }
 
-    public Task ChangePasswordAsync(ChangePasswordRequest request, CancellationToken ct = default)
+    public async Task ChangePasswordAsync(ChangePasswordRequest request, CancellationToken ct = default)
     {
-        // TODO(Phase 3):
-        // 1. Load the current user with GetCurrentUserAsync.
-        // 2. If !_passwordHasher.Verify(request.CurrentPassword, user.PasswordHash) throw UnauthorizedException.
-        // 3. Call user.ChangePassword(_passwordHasher.Hash(request.NewPassword)) and commit.
-        throw new NotImplementedException();
+        var user = await GetCurrentUserAsync(ct);
+
+        if (!_passwordHasher.Verify(request.CurrentPassword, user.PasswordHash)) 
+                throw new UnauthorizedException("Invalid password.");
+
+        user.ChangePassword(_passwordHasher.Hash(request.NewPassword));
+        await _unitOfWork.CommitAsync(ct);;
     }
 
     public async Task DeleteCurrentAsync(CancellationToken ct = default)
