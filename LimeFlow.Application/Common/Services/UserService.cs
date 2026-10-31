@@ -12,17 +12,20 @@ public class UserService : IUserService
     private readonly IPasswordHasher _passwordHasher;
     private readonly ICurrentUserService _currentUser;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ITransactionRepository _transactionRepository;
 
     public UserService(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
         ICurrentUserService currentUser,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        ITransactionRepository transactionRepository)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
         _currentUser = currentUser;
         _unitOfWork = unitOfWork;
+        _transactionRepository = transactionRepository;
     }
 
     public async Task<UserResponse> CreateAsync(CreateUserRequest request, CancellationToken ct = default)
@@ -68,7 +71,7 @@ public class UserService : IUserService
     public async Task DeleteCurrentAsync(CancellationToken ct = default)
     {
         var user = await GetCurrentUserAsync(ct);
-
+        
         _userRepository.Remove(user);
         await _unitOfWork.CommitAsync(ct);
     }

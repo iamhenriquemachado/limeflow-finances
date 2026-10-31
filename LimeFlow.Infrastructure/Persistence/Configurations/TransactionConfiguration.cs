@@ -25,8 +25,6 @@ internal class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
             .HasForeignKey(t => t.AccountId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // NoAction (checked at end of statement) lets a user delete cascade through
-        // Accounts -> Transactions and Categories without ordering conflicts.
         builder.HasOne<Category>()
             .WithMany()
             .HasForeignKey(t => t.CategoryId)

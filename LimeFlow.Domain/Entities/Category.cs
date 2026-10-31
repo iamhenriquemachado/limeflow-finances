@@ -1,4 +1,5 @@
 ﻿using LimeFlow.Domain.Enums;
+using LimeFlow.Domain.Exceptions;
 
 namespace LimeFlow.Domain.Entities;
 
@@ -14,7 +15,8 @@ public class Category
 
     public Category(Guid userId, string name, TransactionType type)
     {
-        // TODO(Phase 4): throw DomainException when name is empty or longer than 50 characters.
+        EnsureName(name);
+
         Id = Guid.NewGuid();
         UserId = userId;
         Name = name.Trim();
@@ -24,7 +26,12 @@ public class Category
 
     public void Rename(string name)
     {
-        // TODO(Phase 4): apply the same name rules as the constructor.
+        EnsureName(name);
         Name = name.Trim();
+    }
+
+    private static void EnsureName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name) ||  name.Trim().Length > 50) throw new DomainException("Name must be at most 50 characters.");
     }
 }
