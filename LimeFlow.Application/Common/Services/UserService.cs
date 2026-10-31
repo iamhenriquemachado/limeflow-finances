@@ -59,7 +59,7 @@ public class UserService : IUserService
         var user = await GetCurrentUserAsync(ct);
 
         if (!_passwordHasher.Verify(request.CurrentPassword, user.PasswordHash)) 
-                throw new UnauthorizedException("Invalid password.");
+                throw new UnauthorizedException("Current password is incorrect.");
 
         user.ChangePassword(_passwordHasher.Hash(request.NewPassword));
         await _unitOfWork.CommitAsync(ct);;
