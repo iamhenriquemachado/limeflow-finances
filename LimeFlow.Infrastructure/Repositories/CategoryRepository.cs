@@ -2,6 +2,7 @@ using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Domain.Entities;
 using LimeFlow.Domain.Enums;
 using LimeFlow.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace LimeFlow.Infrastructure.Repositories;
 
@@ -14,22 +15,24 @@ public class CategoryRepository : ICategoryRepository
         _context = context;
     }
 
-    public Task<Category?> GetByIdAsync(Guid id, Guid userId, CancellationToken ct = default)
-    {
-        // TODO(Phase 4): FirstOrDefaultAsync where Id == id && UserId == userId.
-        throw new NotImplementedException();
-    }
+    public Task<Category?> GetByIdAsync(Guid id, Guid userId, CancellationToken ct = default) =>
+        _context.Categories.FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId, ct);
 
-    public Task<IReadOnlyList<Category>> GetAllAsync(Guid userId, TransactionType? type, CancellationToken ct = default)
-    {
-        // TODO(Phase 4): AsNoTracking, filter by userId and optional type, OrderBy Name.
-        throw new NotImplementedException();
-    }
+    public async Task<IReadOnlyList<Category>> GetAllAsync(Guid userId, TransactionType? type, CancellationToken ct = default) =>
+        await _context.Categories
+            .AsNoTracking()
+            .Where(c => c.UserId == userId)
+            .OrderBy(c => c.Name)
+            .ToListAsync(ct);
 
-    public Task<bool> ExistsByNameAsync(Guid userId, string name, Guid? excludeId = null, CancellationToken ct = default)
+    public async Task<bool> ExistsByNameAsync(Guid userId, string name, Guid? excludeId = null, CancellationToken ct = default)
     {
-        // TODO(Phase 4): AnyAsync on UserId + Name (case-insensitive), excluding excludeId when set.
-        throw new NotImplementedException();
+        var normalizedName = name.Trim().ToLower();
+
+        return await _context.Categories.AnyAsync(c =>
+            c.UserId == userId
+            && c.Name.ToLower() == normalizedName
+            && (excludeId == null || c.Id != excludeId), ct);
     }
 
     public Task<bool> IsInUseAsync(Guid id, CancellationToken ct = default)

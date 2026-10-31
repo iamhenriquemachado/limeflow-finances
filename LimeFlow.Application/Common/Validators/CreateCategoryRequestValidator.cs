@@ -7,7 +7,7 @@ public class CreateCategoryRequestValidator : AbstractValidator<CreateCategoryRe
 {
     public CreateCategoryRequestValidator()
     {
-        // TODO(Phase 4): Name is required, 1-50 characters.
-        // TODO(Phase 4): Type must be a defined TransactionType value (IsInEnum).
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(50);
+        RuleFor(x => x.Type).IsInEnum();
     }
 }
