@@ -23,6 +23,8 @@ public class AccountService : IAccountService
     {
         var accounts = await _accountRepository.GetAllAsync(_currentUser.UserId, ct);
         return accounts.Select(a => a.ToResponse()).ToList();
+
+
     }
 
     public async Task<AccountResponse> GetByIdAsync(Guid id, CancellationToken ct = default)

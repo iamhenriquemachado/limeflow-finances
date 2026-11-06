@@ -1,6 +1,9 @@
 using LimeFlow.Application.Common.DTOs;
 using LimeFlow.Application.Common.Interfaces;
+using LimeFlow.Application.Common.Mappings;
 using LimeFlow.Domain.Enums;
+using LimeFlow.Application.Common.Exceptions;
+using LimeFlow.Domain.Entities;
 
 namespace LimeFlow.Application.Services;
 
@@ -20,15 +23,21 @@ public class CategoryService : ICategoryService
         _unitOfWork = unitOfWork;
     }
 
-    public Task<IReadOnlyList<CategoryResponse>> GetAllAsync(TransactionType? type, CancellationToken ct = default)
+    public async Task<IReadOnlyList<CategoryResponse>> GetAllAsync(TransactionType? type, CancellationToken ct = default)
     {
-        // TODO(Phase 4): load categories for _currentUser.UserId (optionally filtered by type) and map with ToResponse().
-        throw new NotImplementedException();
+        var categories = await _categoryRepository.GetAllAsync(_currentUser.UserId, type, ct);
+        return categories.Select(c => c.ToResponse()).ToList();
     }
 
-    public Task<CategoryResponse> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public async Task<CategoryResponse> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        // TODO(Phase 4): GetByIdAsync(id, userId) or throw NotFoundException(nameof(Category), id).
+
+        var category = await _categoryRepository.GetByIdAsync(id, _currentUser.UserId, ct);
+
+        if (category == null)
+            throw new NotFoundException(nameof(Category), id);
+        return category.ToResponse();
+        
         throw new NotImplementedException();
     }
 
