@@ -7,6 +7,6 @@ public class UpdateCategoryRequestValidator : AbstractValidator<UpdateCategoryRe
 {
     public UpdateCategoryRequestValidator()
     {
-        // TODO(Phase 4): Name is required, 1-50 characters (same rule as CreateCategoryRequestValidator).
+        RuleFor(c => c.Name).NotEmpty().MaximumLength(50);
     }
 }

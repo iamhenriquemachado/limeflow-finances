@@ -35,10 +35,12 @@ public class CategoryRepository : ICategoryRepository
             && (excludeId == null || c.Id != excludeId), ct);
     }
 
-    public Task<bool> IsInUseAsync(Guid id, CancellationToken ct = default)
+    public async Task<bool> IsInUseAsync(Guid id, CancellationToken ct = default)
     {
-        // TODO(Phase 4): true when any Transaction or Budget references this category id.
-        throw new NotImplementedException();
+        if (await _context.Transactions.AnyAsync(t => t.CategoryId == id, ct))
+            return true;
+
+        return await _context.Budgets.AnyAsync(b => b.CategoryId == id, ct);
     }
 
     public void Add(Category category) => _context.Categories.Add(category);
