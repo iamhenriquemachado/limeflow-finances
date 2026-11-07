@@ -1,0 +1,2049 @@
+openapi: 3.0.1
+info:
+  title: LimeFlow API
+  description: |-
+    Personal finance API. This document is the contract for a frontend client.
+
+    ## Auth
+    - `POST /api/v1/users` and `POST /api/v1/sessions` are anonymous.
+    - Every other route requires `Authorization: Bearer {accessToken}`.
+    - Login returns `tokenType: Bearer` and `expiresIn` in seconds (default 3600). There is no refresh token and no logout route. On 401, return to the login screen.
+    - A wrong login password returns 401 with detail `Invalid email or password.` A wrong current password returns 401 with detail `Current password is incorrect.`
+
+    ## JSON
+    - Bodies and query names are camelCase. Query matching is case-insensitive.
+    - Enums are strings, never numbers. `TransactionType` is `Income` or `Expense`. `BudgetPeriod` is `Weekly`, `Monthly`, or `Yearly`.
+    - Money fields allow at most 2 decimal places.
+    - Dates are ISO-8601 UTC, for example `2026-11-07T17:32:28Z`.
+
+    ## Errors
+    Every error is `application/problem+json`.
+    - 400 validation: `errors` maps each property name to an array of messages. Show them on the fields.
+    - 401 the caller is not authenticated, or the password was rejected.
+    - 404 the resource is missing or belongs to another user. Use the same empty state for both.
+    - 409 conflict. `detail` says which one: duplicate email, duplicate category name, category used by a transaction or budget, or a budget that already exists for that category and period.
+    - 422 a business rule failed. Show `detail`. Examples: category type must match the transaction type; insufficient funds; a transaction date or goal target date is in the future; a withdrawal is greater than `alreadySaved`.
+    - 500 unexpected. Do not show a stack trace.
+
+    ## What the screens can rely on
+    - Accounts have `name`, `bank`, and `balance`. Balance changes when a transaction is created, updated, or deleted, and when a goal contribution includes `fromAccountId`. Deleting an account also deletes its transactions.
+    - Categories have a name unique per user (max 50) and a type. Delete returns 409 when a transaction or budget still uses the category.
+    - Transactions are paged. `page` defaults to 1. `pageSize` defaults to 20 and is clamped to 1..100. The list response is `{ items, page, pageSize, totalCount }`. Filters are `accountId`, `categoryId`, `type`, `from`, and `to`. `description` is required, max 200. `transactionDate` may be omitted and then means now. It cannot be in the future. The category type must equal the transaction type.
+    - Budgets: one per category and period. Status uses the current UTC period, and the week starts on Monday. `spent` sums Expense transactions in that category. `percentUsed` is an integer. `isOverThreshold` is true when `percentUsed >= alertThreshold`. `isExceeded` is true when `spent > limitAmount`. `remaining` can be negative. `notes` may be null.
+    - Goals: `progressPercent` and `isCompleted` are computed. Contribute adds to `alreadySaved`. If `fromAccountId` is set, that account is debited and no expense transaction is created, so reports do not include that debit. Withdraw subtracts from `alreadySaved` and does not credit an account. `targetDate` must be in the future.
+    - Reports: `net` is income minus expense in the range. `totalBalance` is the sum of account balances and can differ from `net` after a goal contribution. By-category `percent` is that row's share of the filtered total. Monthly always returns 12 rows, `month` 1 through 12, with zeros when a month has no activity.
+
+    ## Destructive actions
+    `DELETE /api/v1/users/me` deletes the user and all of their accounts, categories, transactions, budgets, and goals. Ask for confirmation.
+  version: v1
+servers:
+- url: http://localhost:5138
+  description: Local development
+paths:
+  /api/v1/sessions:
+    post:
+      tags:
+      - Authentication
+      summary: Authenticate a user
+      description: Validates the credentials and returns a JWT for accessing protected resources.
+      operationId: Login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security: []
+  /api/v1/users:
+    post:
+      tags:
+      - Users
+      summary: Register a new user
+      operationId: CreateUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+        '409':
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security: []
+  /api/v1/users/me:
+    get:
+      tags:
+      - Users
+      summary: Get the authenticated user's profile
+      operationId: GetCurrentUser
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - Users
+      summary: Update the authenticated user's profile
+      operationId: UpdateCurrentUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Users
+      summary: Delete the authenticated user and all their data
+      operationId: DeleteCurrentUser
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/users/me/password:
+    patch:
+      tags:
+      - Users
+      summary: Change the authenticated user's password
+      operationId: ChangeCurrentUserPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/accounts:
+    get:
+      tags:
+      - Accounts
+      summary: List the authenticated user's accounts
+      operationId: GetAccounts
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccountResponse'
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - Accounts
+      summary: Create an account (balance starts at 0)
+      operationId: CreateAccount
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/accounts/{id}:
+    get:
+      tags:
+      - Accounts
+      summary: Get an account by id
+      operationId: GetAccountById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - Accounts
+      summary: Update an account's name and bank
+      description: The balance is never editable; it only changes through transactions.
+      operationId: UpdateAccount
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAccountRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Accounts
+      summary: Delete an account
+      operationId: DeleteAccount
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/categories:
+    get:
+      tags:
+      - Categories
+      summary: List the authenticated user's categories
+      operationId: GetCategories
+      parameters:
+      - name: type
+        in: query
+        schema:
+          $ref: '#/components/schemas/NullableOfTransactionType'
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryResponse'
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - Categories
+      summary: Create a category
+      operationId: CreateCategory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+        '409':
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/categories/{id}:
+    get:
+      tags:
+      - Categories
+      summary: Get a category by id
+      operationId: GetCategoryById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - Categories
+      summary: Rename a category
+      operationId: UpdateCategory
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Categories
+      summary: Delete a category
+      operationId: DeleteCategory
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/transactions:
+    get:
+      tags:
+      - Transactions
+      summary: List the authenticated user's transactions
+      description: Supports filters (accountId, categoryId, type, from, to) and paging (page, pageSize).
+      operationId: GetTransactions
+      parameters:
+      - name: accountId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: categoryId
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: type
+        in: query
+        schema:
+          $ref: '#/components/schemas/NullableOfTransactionType'
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: page
+        in: query
+        schema:
+          type: integer
+          format: int32
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          format: int32
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedResponseOfTransactionResponse'
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - Transactions
+      summary: Create a transaction and update the account balance
+      operationId: CreateTransaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/transactions/{id}:
+    get:
+      tags:
+      - Transactions
+      summary: Get a transaction by id
+      operationId: GetTransactionById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - Transactions
+      summary: Update a transaction (reverts the old effect and applies the new one)
+      operationId: UpdateTransaction
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTransactionRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Transactions
+      summary: Delete a transaction and reverse its effect on the account balance
+      operationId: DeleteTransaction
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/budgets:
+    get:
+      tags:
+      - Budgets
+      summary: List the authenticated user's budgets
+      operationId: GetBudgets
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BudgetResponse'
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - Budgets
+      summary: Create a budget for a category and period
+      operationId: CreateBudget
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBudgetRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/budgets/{id}:
+    get:
+      tags:
+      - Budgets
+      summary: Get a budget by id
+      operationId: GetBudgetById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetResponse'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - Budgets
+      summary: Update a budget
+      operationId: UpdateBudget
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBudgetRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '409':
+          description: Conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Budgets
+      summary: Delete a budget
+      operationId: DeleteBudget
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/budgets/{id}/status:
+    get:
+      tags:
+      - Budgets
+      summary: Get spent vs limit for the current period
+      operationId: GetBudgetStatus
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetStatusResponse'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/goals:
+    get:
+      tags:
+      - Goals
+      summary: List the authenticated user's savings goals
+      operationId: GetGoals
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GoalResponse'
+      security:
+      - bearerAuth: []
+    post:
+      tags:
+      - Goals
+      summary: Create a savings goal
+      operationId: CreateGoal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGoalRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/goals/{id}:
+    get:
+      tags:
+      - Goals
+      summary: Get a goal by id, including progress
+      operationId: GetGoalById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalResponse'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+    put:
+      tags:
+      - Goals
+      summary: Update a savings goal
+      operationId: UpdateGoal
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGoalRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+    delete:
+      tags:
+      - Goals
+      summary: Delete a savings goal
+      operationId: DeleteGoal
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/goals/{id}/contributions:
+    post:
+      tags:
+      - Goals
+      summary: Add money to a goal
+      operationId: ContributeToGoal
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalContributionRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/goals/{id}/withdrawals:
+    post:
+      tags:
+      - Goals
+      summary: Withdraw money from a goal
+      operationId: WithdrawFromGoal
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalWithdrawalRequest'
+        required: true
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/HttpValidationProblemDetails'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+      security:
+      - bearerAuth: []
+  /api/v1/reports/summary:
+    get:
+      tags:
+      - Reports
+      summary: Dashboard totals for a date range
+      operationId: GetReportSummary
+      parameters:
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date-time
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportSummaryResponse'
+      security:
+      - bearerAuth: []
+  /api/v1/reports/by-category:
+    get:
+      tags:
+      - Reports
+      summary: Totals grouped by category
+      operationId: GetReportByCategory
+      parameters:
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: type
+        in: query
+        schema:
+          $ref: '#/components/schemas/NullableOfTransactionType'
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryReportItem'
+      security:
+      - bearerAuth: []
+  /api/v1/reports/monthly:
+    get:
+      tags:
+      - Reports
+      summary: Income and expense per month for a year
+      operationId: GetMonthlyReport
+      parameters:
+      - name: year
+        in: query
+        schema:
+          type: integer
+          format: int32
+      responses:
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MonthlyReportItem'
+      security:
+      - bearerAuth: []
+components:
+  schemas:
+    AccountResponse:
+      required:
+      - id
+      - name
+      - bank
+      - balance
+      - createdAt
+      - updatedAt
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        bank:
+          type: string
+        balance:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    BudgetPeriod:
+      type: string
+      enum:
+      - Weekly
+      - Monthly
+      - Yearly
+      description: Weekly starts on Monday UTC. Monthly and Yearly follow the UTC calendar.
+    BudgetResponse:
+      required:
+      - id
+      - categoryId
+      - limitAmount
+      - alertThreshold
+      - period
+      - notes
+      - createdAt
+      - updatedAt
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        limitAmount:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        alertThreshold:
+          type: integer
+          format: int32
+        period:
+          $ref: '#/components/schemas/BudgetPeriod'
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    BudgetStatusResponse:
+      required:
+      - limitAmount
+      - spent
+      - remaining
+      - percentUsed
+      - isOverThreshold
+      - isExceeded
+      - periodStart
+      - periodEnd
+      type: object
+      properties:
+        limitAmount:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        spent:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        remaining:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        percentUsed:
+          type: integer
+          format: int32
+        isOverThreshold:
+          type: boolean
+        isExceeded:
+          type: boolean
+        periodStart:
+          type: string
+          format: date-time
+        periodEnd:
+          type: string
+          format: date-time
+      description: Computed for the current UTC period. percentUsed is rounded to an integer. remaining
+        is limitAmount minus spent.
+    CategoryReportItem:
+      required:
+      - categoryId
+      - name
+      - total
+      - percent
+      type: object
+      properties:
+        categoryId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        total:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        percent:
+          type: number
+          format: double
+    CategoryResponse:
+      required:
+      - id
+      - name
+      - type
+      - createdAt
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/TransactionType'
+        createdAt:
+          type: string
+          format: date-time
+    ChangePasswordRequest:
+      required:
+      - currentPassword
+      - newPassword
+      type: object
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+    CreateAccountRequest:
+      required:
+      - name
+      - bank
+      type: object
+      properties:
+        name:
+          type: string
+        bank:
+          type: string
+    CreateBudgetRequest:
+      required:
+      - categoryId
+      - limitAmount
+      - alertThreshold
+      - period
+      - notes
+      type: object
+      properties:
+        categoryId:
+          type: string
+          format: uuid
+        limitAmount:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        alertThreshold:
+          type: integer
+          format: int32
+        period:
+          $ref: '#/components/schemas/BudgetPeriod'
+        notes:
+          type: string
+          nullable: true
+    CreateCategoryRequest:
+      required:
+      - name
+      - type
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/TransactionType'
+    CreateGoalRequest:
+      required:
+      - name
+      - description
+      - target
+      - targetDate
+      - monthlyContribution
+      - icon
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        target:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        targetDate:
+          type: string
+          format: date-time
+        monthlyContribution:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        icon:
+          type: string
+    CreateTransactionRequest:
+      required:
+      - accountId
+      - categoryId
+      - type
+      - amount
+      - description
+      - transactionDate
+      type: object
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/TransactionType'
+        amount:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        description:
+          type: string
+        transactionDate:
+          type: string
+          format: date-time
+          nullable: true
+    CreateUserRequest:
+      required:
+      - name
+      - email
+      - password
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+    GoalContributionRequest:
+      required:
+      - amount
+      - fromAccountId
+      type: object
+      properties:
+        amount:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        fromAccountId:
+          type: string
+          format: uuid
+          nullable: true
+      description: fromAccountId is optional. When set, that account is debited in the same request and
+        no expense transaction is created.
+    GoalResponse:
+      required:
+      - id
+      - name
+      - description
+      - target
+      - alreadySaved
+      - targetDate
+      - monthlyContribution
+      - icon
+      - progressPercent
+      - isCompleted
+      - createdAt
+      - updatedAt
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        target:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        alreadySaved:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        targetDate:
+          type: string
+          format: date-time
+        monthlyContribution:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        icon:
+          type: string
+        progressPercent:
+          type: number
+          format: double
+        isCompleted:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      description: progressPercent is alreadySaved / target, capped at 100. isCompleted is true when alreadySaved
+        >= target.
+    GoalWithdrawalRequest:
+      required:
+      - amount
+      type: object
+      properties:
+        amount:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+    HttpValidationProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        status:
+          type: integer
+          format: int32
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+        instance:
+          type: string
+          nullable: true
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+    LoginRequest:
+      required:
+      - email
+      - password
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+    LoginResponse:
+      required:
+      - accessToken
+      - tokenType
+      - expiresIn
+      type: object
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+        expiresIn:
+          type: integer
+          format: int32
+      description: expiresIn is the access token lifetime in seconds. There is no refresh token.
+    MonthlyReportItem:
+      required:
+      - month
+      - income
+      - expense
+      type: object
+      properties:
+        month:
+          type: integer
+          format: int32
+        income:
+          type: number
+          format: double
+        expense:
+          type: number
+          format: double
+    NullableOfTransactionType:
+      type: string
+      nullable: true
+      enum:
+      - Income
+      - Expense
+      description: Omit the query parameter to include both types.
+    PagedResponseOfTransactionResponse:
+      required:
+      - items
+      - page
+      - pageSize
+      - totalCount
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionResponse'
+        page:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        totalCount:
+          type: integer
+          format: int32
+      description: page starts at 1. totalCount is the number of rows matching the filters, before paging.
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        status:
+          type: integer
+          format: int32
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+        instance:
+          type: string
+          nullable: true
+    ReportSummaryResponse:
+      required:
+      - totalBalance
+      - totalIncome
+      - totalExpense
+      - net
+      type: object
+      properties:
+        totalBalance:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        totalIncome:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        totalExpense:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        net:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+      description: net is totalIncome minus totalExpense for the range. totalBalance is the sum of the
+        user's account balances.
+    TransactionResponse:
+      required:
+      - id
+      - accountId
+      - categoryId
+      - type
+      - amount
+      - description
+      - transactionDate
+      - createdAt
+      - updatedAt
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/TransactionType'
+        amount:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        description:
+          type: string
+        transactionDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    TransactionType:
+      type: string
+      enum:
+      - Income
+      - Expense
+      description: Income or Expense. Send the name, not a number.
+    UpdateAccountRequest:
+      required:
+      - name
+      - bank
+      type: object
+      properties:
+        name:
+          type: string
+        bank:
+          type: string
+    UpdateBudgetRequest:
+      required:
+      - categoryId
+      - limitAmount
+      - alertThreshold
+      - period
+      - notes
+      type: object
+      properties:
+        categoryId:
+          type: string
+          format: uuid
+        limitAmount:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        alertThreshold:
+          type: integer
+          format: int32
+        period:
+          $ref: '#/components/schemas/BudgetPeriod'
+        notes:
+          type: string
+          nullable: true
+    UpdateCategoryRequest:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          type: string
+    UpdateGoalRequest:
+      required:
+      - name
+      - description
+      - target
+      - targetDate
+      - monthlyContribution
+      - icon
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        target:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        targetDate:
+          type: string
+          format: date-time
+        monthlyContribution:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        icon:
+          type: string
+    UpdateTransactionRequest:
+      required:
+      - accountId
+      - categoryId
+      - type
+      - amount
+      - description
+      - transactionDate
+      type: object
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        type:
+          $ref: '#/components/schemas/TransactionType'
+        amount:
+          type: number
+          format: double
+          description: Decimal with at most 2 fraction digits.
+        description:
+          type: string
+        transactionDate:
+          type: string
+          format: date-time
+          nullable: true
+    UpdateUserRequest:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          type: string
+    UserResponse:
+      required:
+      - id
+      - name
+      - email
+      - createdAt
+      - updatedAt
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'Access token from POST /api/v1/sessions. Send it as Authorization: Bearer {accessToken}.'
+tags:
+- name: Authentication
+- name: Users
+- name: Accounts
+- name: Categories
+- name: Transactions
+- name: Budgets
+- name: Goals
+- name: Reports
