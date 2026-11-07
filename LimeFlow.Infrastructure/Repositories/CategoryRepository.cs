@@ -16,7 +16,7 @@ public class CategoryRepository : ICategoryRepository
     }
 
     public Task<Category?> GetByIdAsync(Guid id, Guid userId, CancellationToken ct = default) =>
-        _context.Categories.FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId, ct);
+       _context.Categories.FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId, ct);
 
     public async Task<IReadOnlyList<Category>> GetAllAsync(Guid userId, TransactionType? type, CancellationToken ct = default) =>
         await _context.Categories

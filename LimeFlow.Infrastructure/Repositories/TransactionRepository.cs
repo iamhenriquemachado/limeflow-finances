@@ -1,7 +1,9 @@
 using LimeFlow.Application.Common.Interfaces;
+using LimeFlow.Application.Common.Mappings;
 using LimeFlow.Domain.Entities;
 using LimeFlow.Domain.Enums;
 using LimeFlow.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace LimeFlow.Infrastructure.Repositories;
 
@@ -14,13 +16,10 @@ public class TransactionRepository : ITransactionRepository
         _context = context;
     }
 
-    public Task<Transaction?> GetByIdAsync(Guid id, Guid userId, CancellationToken ct = default)
-    {
-        // TODO(Phase 5): join Accounts and return the transaction only when Account.UserId == userId.
-        throw new NotImplementedException();
-    }
+    public Task<Transaction?> GetByIdAsync(Guid id, Guid userId, CancellationToken ct = default) =>
+        _context.Transactions.FirstOrDefaultAsync(t => t.Id == id && _context.Accounts.Any(a => a.Id == t.AccountId));
 
-    public Task<(IReadOnlyList<Transaction> Items, int TotalCount)> GetPagedAsync(
+    public async Task<(IReadOnlyList<Transaction> Items, int TotalCount)> GetPagedAsync(
         Guid userId,
         Guid? accountId,
         Guid? categoryId,
@@ -31,11 +30,34 @@ public class TransactionRepository : ITransactionRepository
         int take,
         CancellationToken ct = default)
     {
-        // TODO(Phase 5):
-        // 1. AsNoTracking query joining Accounts, filter Account.UserId == userId.
-        // 2. Optional filters: accountId, categoryId, type, TransactionDate >= from, TransactionDate <= to.
-        // 3. CountAsync for totalCount; then OrderByDescending TransactionDate, Skip/Take.
-        throw new NotImplementedException();
+
+        var query = _context.Transactions.AsNoTracking()
+            .Where(t => _context.Accounts.Any(a => a.Id == t.AccountId && t.AccountId == a.UserId));
+
+        if (accountId is not null) 
+            query = query.Where(t => t.AccountId == accountId);
+
+        if (categoryId is not null)
+            query = query.Where(t => t.CategoryId == categoryId);
+
+        if (type is not null)
+            query = query.Where(t => t.Type == type);
+
+        if (from is not null)
+            query = query.Where(t => t.TransactionDate <= from);
+
+        if (to is not null)
+            query = query.Where(t => t.TransactionDate <= to);
+
+        var totalCount = await query.CountAsync(ct);
+
+        var items = await query
+            .OrderByDescending(t => t.TransactionDate)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(ct);
+
+        return (items, totalCount);
     }
 
     public void Add(Transaction transaction) => _context.Transactions.Add(transaction);
