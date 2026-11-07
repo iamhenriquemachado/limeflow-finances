@@ -7,11 +7,13 @@ public class CreateGoalRequestValidator : AbstractValidator<CreateGoalRequest>
 {
     public CreateGoalRequestValidator()
     {
-        // TODO(Phase 7): Name is required, max 100 characters.
-        // TODO(Phase 7): Description is required, max 500 characters.
-        // TODO(Phase 7): Target must be greater than 0, with at most 2 decimal places.
-        // TODO(Phase 7): TargetDate must be in the future.
-        // TODO(Phase 7): MonthlyContribution must be greater than or equal to 0.
-        // TODO(Phase 7): Icon is required, max 50 characters.
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.Description).NotEmpty().MaximumLength(500);
+        RuleFor(x => x.Target).GreaterThan(0).PrecisionScale(2, 18, false);
+        RuleFor(x => x.TargetDate)
+            .Must(date => date > DateTime.UtcNow)
+            .WithMessage("Target date must be in the future.");
+        RuleFor(x => x.MonthlyContribution).GreaterThanOrEqualTo(0).PrecisionScale(2, 18, false);
+        RuleFor(x => x.Icon).NotEmpty().MaximumLength(50);
     }
 }

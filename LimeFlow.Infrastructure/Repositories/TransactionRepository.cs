@@ -17,7 +17,9 @@ public class TransactionRepository : ITransactionRepository
     }
 
     public Task<Transaction?> GetByIdAsync(Guid id, Guid userId, CancellationToken ct = default) =>
-        _context.Transactions.FirstOrDefaultAsync(t => t.Id == id && _context.Accounts.Any(a => a.Id == t.AccountId));
+        _context.Transactions.FirstOrDefaultAsync(
+            t => t.Id == id && _context.Accounts.Any(a => a.Id == t.AccountId && a.UserId == userId),
+            ct);
 
     public async Task<(IReadOnlyList<Transaction> Items, int TotalCount)> GetPagedAsync(
         Guid userId,
@@ -31,8 +33,9 @@ public class TransactionRepository : ITransactionRepository
         CancellationToken ct = default)
     {
 
-        var query = _context.Transactions.AsNoTracking()
-            .Where(t => _context.Accounts.Any(a => a.Id == t.AccountId && t.AccountId == a.UserId));
+        var query = _context.Transactions
+            .AsNoTracking()
+            .Where(t => _context.Accounts.Any(a => a.Id == t.AccountId && a.UserId == userId));
 
         if (accountId is not null) 
             query = query.Where(t => t.AccountId == accountId);
@@ -44,7 +47,7 @@ public class TransactionRepository : ITransactionRepository
             query = query.Where(t => t.Type == type);
 
         if (from is not null)
-            query = query.Where(t => t.TransactionDate <= from);
+            query = query.Where(t => t.TransactionDate >= from);
 
         if (to is not null)
             query = query.Where(t => t.TransactionDate <= to);

@@ -7,10 +7,10 @@ public class CreateBudgetRequestValidator : AbstractValidator<CreateBudgetReques
 {
     public CreateBudgetRequestValidator()
     {
-        // TODO(Phase 6): CategoryId is required (not empty Guid).
-        // TODO(Phase 6): LimitAmount must be greater than 0, with at most 2 decimal places.
-        // TODO(Phase 6): AlertThreshold is an integer between 1 and 100 (percent).
-        // TODO(Phase 6): Period must be a defined BudgetPeriod value (IsInEnum).
-        // TODO(Phase 6): Notes is optional, max 500 characters.
+        RuleFor(x => x.CategoryId).NotEmpty();
+        RuleFor(x => x.LimitAmount).GreaterThan(0).PrecisionScale(2, 18, false);
+        RuleFor(x => x.AlertThreshold).InclusiveBetween(1, 100);
+        RuleFor(x => x.Period).IsInEnum();
+        RuleFor(x => x.Notes).MaximumLength(500);
     }
 }

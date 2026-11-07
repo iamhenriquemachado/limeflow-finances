@@ -1,4 +1,5 @@
 ﻿using LimeFlow.Domain.Enums;
+using LimeFlow.Domain.Exceptions;
 
 namespace LimeFlow.Domain.Entities;
 
@@ -23,8 +24,9 @@ public class Transaction
         string description,
         DateTime transactionDate)
     {
-        // TODO(Phase 5): throw DomainException when amount <= 0
-        // or when transactionDate > DateTime.UtcNow ("Transaction date cannot be in the future").
+        EnsureAmount(amount);
+        EnsureTransactionDate(transactionDate);
+
         Id = Guid.NewGuid();
         AccountId = accountId;
         CategoryId = categoryId;
@@ -43,13 +45,26 @@ public class Transaction
         string description,
         DateTime transactionDate)
     {
-        // TODO(Phase 5): apply the same rules as the constructor.
-        // The balance revert/apply is orchestrated by TransactionService, not here.
+        EnsureAmount(amount);
+        EnsureTransactionDate(transactionDate);
+
         AccountId = accountId;
         CategoryId = categoryId;
         Type = type;
         Amount = amount;
         Description = description.Trim();
         TransactionDate = transactionDate;
+    }
+
+    private static void EnsureAmount(decimal amount)
+    {
+        if (amount <= 0)
+            throw new DomainException("Amount must be greater than zero.");
+    }
+
+    private static void EnsureTransactionDate(DateTime transactionDate)
+    {
+        if (transactionDate > DateTime.UtcNow)
+            throw new DomainException("Transaction date cannot be in the future.");
     }
 }

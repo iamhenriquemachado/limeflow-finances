@@ -7,6 +7,6 @@ public class GoalWithdrawalRequestValidator : AbstractValidator<GoalWithdrawalRe
 {
     public GoalWithdrawalRequestValidator()
     {
-        // TODO(Phase 7): Amount must be greater than 0, with at most 2 decimal places.
+        RuleFor(x => x.Amount).GreaterThan(0).PrecisionScale(2, 18, false);
     }
 }

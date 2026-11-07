@@ -7,6 +7,6 @@ public class UpdateCategoryRequestValidator : AbstractValidator<UpdateCategoryRe
 {
     public UpdateCategoryRequestValidator()
     {
-        RuleFor(c => c.Name).NotEmpty().MaximumLength(50);
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(50);
     }
 }

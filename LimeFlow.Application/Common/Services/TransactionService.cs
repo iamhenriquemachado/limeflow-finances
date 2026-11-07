@@ -1,6 +1,11 @@
 using LimeFlow.Application.Common.DTOs;
+using LimeFlow.Application.Common.Exceptions;
 using LimeFlow.Application.Common.Interfaces;
+using LimeFlow.Application.Common.Mappings;
 using LimeFlow.Application.Common.Models;
+using LimeFlow.Domain.Entities;
+using LimeFlow.Domain.Enums;
+using LimeFlow.Domain.Exceptions;
 
 namespace LimeFlow.Application.Services;
 
@@ -26,48 +31,108 @@ public class TransactionService : ITransactionService
         _unitOfWork = unitOfWork;
     }
 
-    public Task<PagedResponse<TransactionResponse>> GetAllAsync(TransactionFilter filter, CancellationToken ct = default)
+    public async Task<PagedResponse<TransactionResponse>> GetAllAsync(TransactionFilter filter, CancellationToken ct = default)
     {
-        // TODO(Phase 5): call GetPagedAsync with filter fields + filter.Skip/Take, order by TransactionDate desc,
-        // map items with ToResponse(), return new PagedResponse(items, filter.PageNumber, filter.Take, totalCount).
-        throw new NotImplementedException();
+        var (items, totalCount) = await _transactionRepository.GetPagedAsync(
+            _currentUser.UserId,
+            filter.AccountId,
+            filter.CategoryId,
+            filter.Type,
+            filter.From,
+            filter.To,
+            filter.Skip,
+            filter.Take,
+            ct);
+
+        var responses = items.Select(t => t.ToResponse()).ToList();
+
+        return new PagedResponse<TransactionResponse>(responses, filter.PageNumber, filter.Take, totalCount);
     }
 
-    public Task<TransactionResponse> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public async Task<TransactionResponse> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        // TODO(Phase 5): GetByIdAsync(id, userId) or throw NotFoundException(nameof(Transaction), id).
-        throw new NotImplementedException();
+        var transaction = await _transactionRepository.GetByIdAsync(id, _currentUser.UserId, ct) ??
+            throw new NotFoundException(nameof(Transaction), id);
+
+        return transaction.ToResponse();
     }
 
-    public Task<TransactionResponse> CreateAsync(CreateTransactionRequest request, CancellationToken ct = default)
+    public async Task<TransactionResponse> CreateAsync(CreateTransactionRequest request, CancellationToken ct = default)
     {
-        // TODO(Phase 5):
-        // 1. Load the owned account (GetByIdAsync(request.AccountId, userId)) or throw NotFoundException. Do not commit.
-        // 2. Load the owned category or throw NotFoundException. Category.Type must equal request.Type, otherwise DomainException.
-        // 3. new Transaction(..., request.TransactionDate ?? DateTime.UtcNow).
-        // 4. If Income: account.AddCredit(amount). If Expense: account.Debit(amount).
-        // 5. _transactionRepository.Add(transaction); await _unitOfWork.CommitAsync(ct); return ToResponse().
-        throw new NotImplementedException();
+        var account = await _accountRepository.GetByIdAsync(request.AccountId, _currentUser.UserId, ct) ??
+            throw new NotFoundException(nameof(Account), request.AccountId);
+
+        var category = await _categoryRepository.GetByIdAsync(request.CategoryId, _currentUser.UserId, ct) ??
+            throw new NotFoundException(nameof(Category), request.CategoryId);
+
+        if (category.Type != request.Type)
+            throw new DomainException("Category type must match the transaction type.");
+
+        var transaction = new Transaction(request.AccountId, request.CategoryId, request.Type, request.Amount, request.Description, request.TransactionDate ?? DateTime.UtcNow);
+
+        if (transaction.Type == TransactionType.Income)
+            account.AddCredit(request.Amount);
+        else 
+            account.Debit(request.Amount);
+
+        _transactionRepository.Add(transaction);
+        await _unitOfWork.CommitAsync(ct);
+        return transaction.ToResponse();
     }
 
-    public Task<TransactionResponse> UpdateAsync(Guid id, UpdateTransactionRequest request, CancellationToken ct = default)
+    public async Task<TransactionResponse> UpdateAsync(Guid id, UpdateTransactionRequest request, CancellationToken ct = default)
     {
-        // TODO(Phase 5):
-        // 1. Load the owned transaction or throw NotFoundException. Do not commit on any failure.
-        // 2. Load the old account (transaction.AccountId) and revert the old effect
-        //    (Income -> Debit, Expense -> AddCredit).
-        // 3. Load the new owned account and category (404 if missing / not owned). Category.Type must match request.Type.
-        // 4. transaction.Update(...); apply the new effect on the (possibly different) account.
-        // 5. Single CommitAsync.
-        throw new NotImplementedException();
+        var transaction = await _transactionRepository.GetByIdAsync(id, _currentUser.UserId, ct)
+            ?? throw new NotFoundException(nameof(Transaction), id);
+
+        var account = await _accountRepository.GetByIdAsync(request.AccountId, _currentUser.UserId, ct)
+            ?? throw new NotFoundException(nameof(Account), request.AccountId);
+
+        var category = await _categoryRepository.GetByIdAsync(request.CategoryId, _currentUser.UserId, ct)
+            ?? throw new NotFoundException(nameof(Category), request.CategoryId);
+
+        if (category.Type != request.Type)
+            throw new DomainException("Category type must match the transaction type.");
+
+        var oldAccount = await _accountRepository.GetByIdAsync(transaction.AccountId, _currentUser.UserId, ct)
+            ?? throw new NotFoundException(nameof(Account), transaction.AccountId);
+
+        if (transaction.Type == TransactionType.Income)
+            oldAccount.Debit(transaction.Amount);
+        else
+            oldAccount.AddCredit(transaction.Amount);
+
+        transaction.Update(
+            request.AccountId,
+            request.CategoryId,
+            request.Type,
+            request.Amount,
+            request.Description,
+            request.TransactionDate ?? DateTime.UtcNow);
+
+        if (transaction.Type == TransactionType.Income)
+            account.AddCredit(transaction.Amount);
+        else
+            account.Debit(transaction.Amount);
+
+        await _unitOfWork.CommitAsync(ct);
+        return transaction.ToResponse();
     }
 
-    public Task DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        // TODO(Phase 5):
-        // 1. Load the owned transaction and its account.
-        // 2. Revert the effect (deleting a 50 Expense credits 50 back).
-        // 3. Remove the transaction and CommitAsync once.
-        throw new NotImplementedException();
+        var transaction = await _transactionRepository.GetByIdAsync(id, _currentUser.UserId, ct)
+            ?? throw new NotFoundException(nameof(Transaction), id);
+
+        var account = await _accountRepository.GetByIdAsync(transaction.AccountId, _currentUser.UserId, ct)
+            ?? throw new NotFoundException(nameof(Account), transaction.AccountId);
+
+        if (transaction.Type == TransactionType.Income)
+            account.Debit(transaction.Amount);
+        else
+            account.AddCredit(transaction.Amount);
+
+        _transactionRepository.Remove(transaction);
+        await _unitOfWork.CommitAsync(ct);
     }
 }

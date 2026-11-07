@@ -7,7 +7,6 @@ public class UpdateUserRequestValidator : AbstractValidator<UpdateUserRequest>
 {
     public UpdateUserRequestValidator()
     {
-        // TODO(Phase 3): Name is required, 3-100 characters (same rule as CreateUserRequestValidator).
-        RuleFor(x => x.Name).MinimumLength(3).MaximumLength(100);
+        RuleFor(x => x.Name).NotEmpty().Length(3, 100);
     }
 }

@@ -7,6 +7,10 @@ public class UpdateBudgetRequestValidator : AbstractValidator<UpdateBudgetReques
 {
     public UpdateBudgetRequestValidator()
     {
-        // TODO(Phase 6): same rules as CreateBudgetRequestValidator.
+        RuleFor(x => x.CategoryId).NotEmpty();
+        RuleFor(x => x.LimitAmount).GreaterThan(0).PrecisionScale(2, 18, false);
+        RuleFor(x => x.AlertThreshold).InclusiveBetween(1, 100);
+        RuleFor(x => x.Period).IsInEnum();
+        RuleFor(x => x.Notes).MaximumLength(500);
     }
 }

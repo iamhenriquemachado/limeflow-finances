@@ -7,6 +7,14 @@ public class UpdateTransactionRequestValidator : AbstractValidator<UpdateTransac
 {
     public UpdateTransactionRequestValidator()
     {
-        // TODO(Phase 5): same rules as CreateTransactionRequestValidator.
+        RuleFor(x => x.AccountId).NotEmpty();
+        RuleFor(x => x.CategoryId).NotEmpty();
+        RuleFor(x => x.Type).IsInEnum();
+        RuleFor(x => x.Amount).GreaterThan(0).PrecisionScale(2, 18, false);
+        RuleFor(x => x.Description).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.TransactionDate)
+            .Must(date => date <= DateTime.UtcNow)
+            .When(x => x.TransactionDate.HasValue)
+            .WithMessage("Transaction date cannot be in the future.");
     }
 }
