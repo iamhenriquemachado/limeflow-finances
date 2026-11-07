@@ -29,7 +29,7 @@ public class AccountService : IAccountService
 
     public async Task<AccountResponse> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var account = await GetOwnedAccountAsync(id, ct);
+       var account = await GetOwnedAccountAsync(id, ct);
         return account.ToResponse();
     }
 

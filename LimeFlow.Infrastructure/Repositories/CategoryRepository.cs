@@ -21,7 +21,7 @@ public class CategoryRepository : ICategoryRepository
     public async Task<IReadOnlyList<Category>> GetAllAsync(Guid userId, TransactionType? type, CancellationToken ct = default) =>
         await _context.Categories
             .AsNoTracking()
-            .Where(c => c.UserId == userId)
+            .Where(c => c.UserId == userId && (type == null || c.Type == type))
             .OrderBy(c => c.Name)
             .ToListAsync(ct);
 

@@ -1,9 +1,9 @@
 using LimeFlow.Application.Common.DTOs;
+using LimeFlow.Application.Common.Exceptions;
 using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Application.Common.Mappings;
-using LimeFlow.Domain.Enums;
-using LimeFlow.Application.Common.Exceptions;
 using LimeFlow.Domain.Entities;
+using LimeFlow.Domain.Enums;
 
 namespace LimeFlow.Application.Services;
 
@@ -31,48 +31,48 @@ public class CategoryService : ICategoryService
 
     public async Task<CategoryResponse> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-
-        var category = await _categoryRepository.GetByIdAsync(id, _currentUser.UserId, ct);
-
-        if (category == null)
-            throw new NotFoundException(nameof(Category), id);
+        var category = await GetOwnedCategoryAsync(id, ct);
         return category.ToResponse();
-
-        throw new NotImplementedException();
     }
 
     public async Task<CategoryResponse> CreateAsync(CreateCategoryRequest request, CancellationToken ct = default)
     {
-        var categoryExists = _categoryRepository.ExistsByNameAsync(_currentUser.UserId, request.Name);
-        if (categoryExists != null)
-        {
-            throw new ConflictException("A categrory with this name already exists.");
-
-        }
+        if (await _categoryRepository.ExistsByNameAsync(_currentUser.UserId, request.Name, ct: ct))
+            throw new ConflictException("A category with this name already exists.");
 
         var category = new Category(_currentUser.UserId, request.Name, request.Type);
 
         _categoryRepository.Add(category);
         await _unitOfWork.CommitAsync(ct);
-        
+
         return category.ToResponse();
     }
 
-    public Task<CategoryResponse> UpdateAsync(Guid id, UpdateCategoryRequest request, CancellationToken ct = default)
+    public async Task<CategoryResponse> UpdateAsync(Guid id, UpdateCategoryRequest request, CancellationToken ct = default)
     {
-        // TODO(Phase 4):
-        // 1. Load the owned category or throw NotFoundException.
-        // 2. If ExistsByNameAsync(userId, request.Name, excludeId: id) throw ConflictException.
-        // 3. category.Rename(request.Name), CommitAsync, return ToResponse().
-        throw new NotImplementedException();
+        var category = await GetOwnedCategoryAsync(id, ct);
+
+        if (await _categoryRepository.ExistsByNameAsync(_currentUser.UserId, request.Name, excludeId: id, ct))
+            throw new ConflictException("A category with this name already exists.");
+
+        category.Rename(request.Name);
+        await _unitOfWork.CommitAsync(ct);
+
+        return category.ToResponse();
     }
 
-    public Task DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        // TODO(Phase 4):
-        // 1. Load the owned category or throw NotFoundException.
-        // 2. If IsInUseAsync(id) throw ConflictException("Category is used by transactions or budgets.").
-        // 3. Remove and CommitAsync.
-        throw new NotImplementedException();
+        var category = await GetOwnedCategoryAsync(id, ct);
+
+        if (await _categoryRepository.IsInUseAsync(id, ct))
+            throw new ConflictException("Category is used by transactions or budgets.");
+
+        _categoryRepository.Remove(category);
+        await _unitOfWork.CommitAsync(ct);
     }
+
+    private async Task<Category> GetOwnedCategoryAsync(Guid id, CancellationToken ct) =>
+        await _categoryRepository.GetByIdAsync(id, _currentUser.UserId, ct)
+        ?? throw new NotFoundException(nameof(Category), id);
 }
