@@ -7,10 +7,14 @@ public class CreateTransactionRequestValidator : AbstractValidator<CreateTransac
 {
     public CreateTransactionRequestValidator()
     {
-        // TODO(Phase 5): AccountId and CategoryId are required (not empty Guid).
-        // TODO(Phase 5): Type must be a defined TransactionType value (IsInEnum).
-        // TODO(Phase 5): Amount must be greater than 0, with at most 2 decimal places.
-        // TODO(Phase 5): Description is required, max 200 characters.
-        // TODO(Phase 5): TransactionDate, when provided, cannot be in the future.
+        RuleFor(t => t.AccountId).NotEmpty();
+        RuleFor(t => t.CategoryId).NotEmpty();
+        RuleFor(t => t.Type).IsInEnum();
+        RuleFor(t => t.Amount).GreaterThan(0).PrecisionScale(2, 18, false);
+        RuleFor(t => t.Description).NotEmpty().MaximumLength(200);
+        RuleFor(t => t.TransactionDate)
+            .Must(date => date <= DateTime.UtcNow)
+            .When(t => t.TransactionDate.HasValue)
+            .WithMessage("Transaction date cannot be in the future.");
     }
 }
