@@ -10,7 +10,7 @@ public class UpdateTransactionRequestValidator : AbstractValidator<UpdateTransac
         RuleFor(x => x.AccountId).NotEmpty();
         RuleFor(x => x.CategoryId).NotEmpty();
         RuleFor(x => x.Type).IsInEnum();
-        RuleFor(x => x.Amount).GreaterThan(0).PrecisionScale(2, 18, false);
+        RuleFor(x => x.Amount).GreaterThan(0).PrecisionScale(18, 2, false);
         RuleFor(x => x.Description).NotEmpty().MaximumLength(200);
         RuleFor(x => x.TransactionDate)
             .Must(date => date <= DateTime.UtcNow)

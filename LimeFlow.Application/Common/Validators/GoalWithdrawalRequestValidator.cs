@@ -7,6 +7,6 @@ public class GoalWithdrawalRequestValidator : AbstractValidator<GoalWithdrawalRe
 {
     public GoalWithdrawalRequestValidator()
     {
-        RuleFor(x => x.Amount).GreaterThan(0).PrecisionScale(2, 18, false);
+        RuleFor(x => x.Amount).GreaterThan(0).PrecisionScale(18, 2, false);
     }
 }

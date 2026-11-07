@@ -8,7 +8,7 @@ public class CreateBudgetRequestValidator : AbstractValidator<CreateBudgetReques
     public CreateBudgetRequestValidator()
     {
         RuleFor(x => x.CategoryId).NotEmpty();
-        RuleFor(x => x.LimitAmount).GreaterThan(0).PrecisionScale(2, 18, false);
+        RuleFor(x => x.LimitAmount).GreaterThan(0).PrecisionScale(18, 2, false);
         RuleFor(x => x.AlertThreshold).InclusiveBetween(1, 100);
         RuleFor(x => x.Period).IsInEnum();
         RuleFor(x => x.Notes).MaximumLength(500);
