@@ -1,4 +1,6 @@
-﻿namespace LimeFlow.Domain.Entities;
+﻿using LimeFlow.Domain.Exceptions;
+
+namespace LimeFlow.Domain.Entities;
 
 public class Goal
 {
@@ -28,8 +30,10 @@ public class Goal
         decimal monthlyContribution,
         string icon)
     {
-        // TODO(Phase 7): throw DomainException when target <= 0
-        // or targetDate is not in the future.
+        EnsureTarget(target);
+        EnsureTargetDate(targetDate);
+        EnsureMonthlyContribution(monthlyContribution);
+
         Id = Guid.NewGuid();
         UserId = userId;
         Name = name.Trim();
@@ -51,7 +55,10 @@ public class Goal
         decimal monthlyContribution,
         string icon)
     {
-        // TODO(Phase 7): apply the same rules as the constructor.
+        EnsureTarget(target);
+        EnsureTargetDate(targetDate);
+        EnsureMonthlyContribution(monthlyContribution);
+
         Name = name.Trim();
         Description = description.Trim();
         Target = target;
@@ -63,13 +70,42 @@ public class Goal
 
     public void Contribute(decimal amount)
     {
-        // TODO(Phase 7): reject amount <= 0, add to AlreadySaved, update UpdatedAt.
-        throw new NotImplementedException();
+        EnsureAmount(amount);
+        AlreadySaved += amount;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Withdraw(decimal amount)
     {
-        // TODO(Phase 7): reject amount <= 0 or amount > AlreadySaved, subtract, update UpdatedAt.
-        throw new NotImplementedException();
+        EnsureAmount(amount);
+        if (amount > AlreadySaved)
+            throw new DomainException("Amount cannot exceed the amount already saved.");
+
+        AlreadySaved -= amount;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    private static void EnsureTarget(decimal target)
+    {
+        if (target <= 0)
+            throw new DomainException("Target must be greater than zero.");
+    }
+
+    private static void EnsureTargetDate(DateTime targetDate)
+    {
+        if (targetDate <= DateTime.UtcNow)
+            throw new DomainException("Target date must be in the future.");
+    }
+
+    private static void EnsureMonthlyContribution(decimal monthlyContribution)
+    {
+        if (monthlyContribution < 0)
+            throw new DomainException("Monthly contribution cannot be negative.");
+    }
+
+    private static void EnsureAmount(decimal amount)
+    {
+        if (amount <= 0)
+            throw new DomainException("Amount must be greater than zero.");
     }
 }

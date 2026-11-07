@@ -265,7 +265,7 @@ List endpoints that can grow (transactions) accept `?page=1&pageSize=20` (max 10
 
 ### Transaction
 
-- Fields: `Id`, `AccountId`, `CategoryId`, `Type`, `Amount`, `Description` (max 200), `TransactionDate`, `CreatedAt`.
+- Fields: `Id`, `AccountId`, `CategoryId`, `Type`, `Amount`, `Description` (max 200), `TransactionDate`, `CreatedAt`, `UpdatedAt`.
 - `Amount > 0`.
 - `TransactionDate` cannot be in the future: `if (transactionDate > DateTime.UtcNow) throw ...`.
 - Private setters; created only through its constructor.

@@ -14,5 +14,6 @@ public static class TransactionMappings
             transaction.Amount,
             transaction.Description,
             transaction.TransactionDate,
-            transaction.CreatedAt);
+            transaction.CreatedAt,
+            transaction.UpdatedAt);
 }

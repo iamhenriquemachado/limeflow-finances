@@ -13,6 +13,12 @@ public interface IBudgetRepository
         BudgetPeriod period,
         Guid? excludeId = null,
         CancellationToken ct = default);
+    Task<decimal> SumExpensesAsync(
+        Guid userId,
+        Guid categoryId,
+        DateTime periodStart,
+        DateTime periodEnd,
+        CancellationToken ct = default);
     void Add(Budget budget);
     void Remove(Budget budget);
 }

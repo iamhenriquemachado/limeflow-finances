@@ -1,4 +1,5 @@
 ﻿using LimeFlow.Domain.Enums;
+using LimeFlow.Domain.Exceptions;
 
 namespace LimeFlow.Domain.Entities;
 
@@ -24,8 +25,9 @@ public class Budget
         BudgetPeriod period,
         string? notes)
     {
-        // TODO(Phase 6): throw DomainException when limitAmount <= 0
-        // or alertThreshold is outside 1-100.
+        EnsureLimit(limitAmount);
+        EnsureThreshold(alertThreshold);
+
         Id = Guid.NewGuid();
         UserId = userId;
         CategoryId = categoryId;
@@ -37,13 +39,28 @@ public class Budget
         UpdatedAt = CreatedAt;
     }
 
-    public void Update(decimal limitAmount, int alertThreshold, BudgetPeriod period, string? notes)
+    public void Update(Guid categoryId, decimal limitAmount, int alertThreshold, BudgetPeriod period, string? notes)
     {
-        // TODO(Phase 6): apply the same rules as the constructor.
+        EnsureLimit(limitAmount);
+        EnsureThreshold(alertThreshold);
+
+        CategoryId = categoryId;
         LimitAmount = limitAmount;
         AlertThreshold = alertThreshold;
         Period = period;
         Notes = notes?.Trim();
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    private static void EnsureLimit(decimal limitAmount)
+    {
+        if (limitAmount <= 0)
+            throw new DomainException("Limit amount must be greater than zero.");
+    }
+
+    private static void EnsureThreshold(int alertThreshold)
+    {
+        if (alertThreshold is < 1 or > 100)
+            throw new DomainException("Alert threshold must be between 1 and 100.");
     }
 }

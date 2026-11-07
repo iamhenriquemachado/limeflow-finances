@@ -27,7 +27,8 @@ public record TransactionResponse(
     decimal Amount,
     string Description,
     DateTime TransactionDate,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    DateTime UpdatedAt);
 
 public record TransactionFilter : PagedRequest
 {

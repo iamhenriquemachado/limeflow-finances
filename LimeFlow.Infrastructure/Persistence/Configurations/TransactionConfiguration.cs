@@ -16,6 +16,7 @@ internal class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.Property(t => t.Type).IsRequired();
         builder.Property(t => t.TransactionDate).IsRequired();
         builder.Property(t => t.CreatedAt).IsRequired();
+        builder.Property(t => t.UpdatedAt).IsRequired();
 
         builder.HasIndex(t => new { t.AccountId, t.TransactionDate });
         builder.HasIndex(t => t.CategoryId);

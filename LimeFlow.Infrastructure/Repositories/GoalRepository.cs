@@ -1,6 +1,7 @@
 using LimeFlow.Application.Common.Interfaces;
 using LimeFlow.Domain.Entities;
 using LimeFlow.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace LimeFlow.Infrastructure.Repositories;
 
@@ -13,17 +14,15 @@ public class GoalRepository : IGoalRepository
         _context = context;
     }
 
-    public Task<Goal?> GetByIdAsync(Guid id, Guid userId, CancellationToken ct = default)
-    {
-        // TODO(Phase 7): FirstOrDefaultAsync where Id == id && UserId == userId.
-        throw new NotImplementedException();
-    }
+    public Task<Goal?> GetByIdAsync(Guid id, Guid userId, CancellationToken ct = default) =>
+        _context.Goals.FirstOrDefaultAsync(g => g.Id == id && g.UserId == userId, ct);
 
-    public Task<IReadOnlyList<Goal>> GetAllAsync(Guid userId, CancellationToken ct = default)
-    {
-        // TODO(Phase 7): AsNoTracking, filter by userId, OrderBy TargetDate.
-        throw new NotImplementedException();
-    }
+    public async Task<IReadOnlyList<Goal>> GetAllAsync(Guid userId, CancellationToken ct = default) =>
+        await _context.Goals
+            .AsNoTracking()
+            .Where(g => g.UserId == userId)
+            .OrderBy(g => g.TargetDate)
+            .ToListAsync(ct);
 
     public void Add(Goal goal) => _context.Goals.Add(goal);
 

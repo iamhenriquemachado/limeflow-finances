@@ -13,6 +13,7 @@ public class Transaction
     public string Description { get; private set; } = string.Empty;
     public DateTime TransactionDate { get; private set; }
     public DateTime CreatedAt { get; private set; }
+    public DateTime UpdatedAt { get; private set; }
 
     private Transaction() { }
 
@@ -35,6 +36,7 @@ public class Transaction
         Description = description.Trim();
         TransactionDate = transactionDate;
         CreatedAt = DateTime.UtcNow;
+        UpdatedAt = CreatedAt;
     }
 
     public void Update(
@@ -54,6 +56,7 @@ public class Transaction
         Amount = amount;
         Description = description.Trim();
         TransactionDate = transactionDate;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     private static void EnsureAmount(decimal amount)

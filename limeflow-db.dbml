@@ -52,6 +52,7 @@ Table goals {
 Table transactions {
   id varchar [primary key]
   created_at datetime [not null]
+  updated_at datetime [not null]
   description varchar [not null]
   account_id varchar [not null]
   category_id varchar [not null]
