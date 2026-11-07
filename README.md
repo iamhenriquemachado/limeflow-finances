@@ -34,7 +34,7 @@ This README is both the **requirements specification** and the **implementation 
 
 ```bash
 cd LimeFlow.API
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=limeflow;Username=postgres;Password=postgres"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5433;Database=limeflow;Username=postgres;Password=postgres"
 dotnet user-secrets set "JwtSettings:SecretKey" "<at-least-32-random-characters>"
 dotnet user-secrets set "JwtSettings:Issuer" "LimeFlow"
 dotnet user-secrets set "JwtSettings:Audience" "LimeFlow.Client"

@@ -37,16 +37,25 @@ public class CategoryService : ICategoryService
         if (category == null)
             throw new NotFoundException(nameof(Category), id);
         return category.ToResponse();
-        
+
         throw new NotImplementedException();
     }
 
-    public Task<CategoryResponse> CreateAsync(CreateCategoryRequest request, CancellationToken ct = default)
+    public async Task<CategoryResponse> CreateAsync(CreateCategoryRequest request, CancellationToken ct = default)
     {
-        // TODO(Phase 4):
-        // 1. If ExistsByNameAsync(userId, request.Name) throw ConflictException("A category with this name already exists.").
-        // 2. new Category(userId, request.Name, request.Type), Add, CommitAsync, return ToResponse().
-        throw new NotImplementedException();
+        var categoryExists = _categoryRepository.ExistsByNameAsync(_currentUser.UserId, request.Name);
+        if (categoryExists != null)
+        {
+            throw new ConflictException("A categrory with this name already exists.");
+
+        }
+
+        var category = new Category(_currentUser.UserId, request.Name, request.Type);
+
+        _categoryRepository.Add(category);
+        await _unitOfWork.CommitAsync(ct);
+        
+        return category.ToResponse();
     }
 
     public Task<CategoryResponse> UpdateAsync(Guid id, UpdateCategoryRequest request, CancellationToken ct = default)
