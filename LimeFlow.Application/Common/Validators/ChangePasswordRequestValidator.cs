@@ -7,7 +7,8 @@ public class ChangePasswordRequestValidator : AbstractValidator<ChangePasswordRe
 {
     public ChangePasswordRequestValidator()
     {
-        // TODO(Phase 3): CurrentPassword is required.
-        // TODO(Phase 3): NewPassword uses StrongPassword() and must differ from CurrentPassword.
+        RuleFor(x => x.CurrentPassword).NotEmpty();
+        RuleFor(x => x.NewPassword).StrongPassword()
+            .NotEqual(x => x.CurrentPassword);
     }
 }
